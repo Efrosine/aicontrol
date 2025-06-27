@@ -71,12 +71,7 @@
                     <h2 class="card-title">Live Stream</h2>
 
                     <div class="aspect-video bg-base-200 rounded-box flex items-center justify-center mb-4">
-                        <!-- Replace with actual video player when implemented -->
-                        <div class="text-center">
-                            <div class="loading loading-spinner loading-lg mb-4"></div>
-                            <p>Loading stream from {{ $cctv->name }}...</p>
-                            <a href="{{ $cctv->stream_url }}" target="_blank" class="btn btn-sm mt-4">Open in new tab</a>
-                        </div>
+                        <img src="{{ $cctv->stream_url }}" alt="">
                     </div>
 
                     <div class="alert alert-info">

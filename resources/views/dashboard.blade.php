@@ -26,16 +26,6 @@
                     </div>
                 </div>
 
-                <div class="card bg-accent text-accent-content">
-                    <div class="card-body">
-                        <h3 class="card-title">Social Media</h3>
-                        <p>View scraped data results</p>
-                        <div class="card-actions justify-end">
-                            <a href="#" class="btn btn-sm">View</a>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="card bg-neutral text-neutral-content">
                     <div class="card-body">
                         <h3 class="card-title">Dummy Accounts</h3>
@@ -62,6 +52,15 @@
                         <p>Run Instagram/X/Twitter scraping using dummy accounts</p>
                         <div class="card-actions justify-end">
                             <a href="{{ route('admin.scraper.form') }}" class="btn btn-sm btn-info">Open Scraper</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card bg-accent text-accent-content">
+                    <div class="card-body">
+                        <h3 class="card-title">Sraper Result</h3>
+                        <p>View scraped data results</p>
+                        <div class="card-actions justify-end">
+                            <a href="{{ route('scraper.results.list') }}" class="btn btn-sm">View</a>
                         </div>
                     </div>
                 </div>
