@@ -35,6 +35,16 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="card bg-neutral text-neutral-content">
+                <div class="card-body">
+                    <h3 class="card-title">Dummy Accounts</h3>
+                    <p>Manage social media dummy accounts</p>
+                    <div class="card-actions justify-end">
+                        <a href="{{ route('dummy-accounts.index') }}" class="btn btn-sm">View</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

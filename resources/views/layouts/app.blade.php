@@ -30,6 +30,7 @@
                         <li class="menu-title text-xs opacity-50">{{ auth()->user()->role }}</li>
                         @if(auth()->user()->role === 'admin')
                         <li><a href="{{ route('users.index') }}">Manage Users</a></li>
+                        <li><a href="{{ route('dummy-accounts.index') }}">Dummy Accounts</a></li>
                         @endif
                         <li>
                             <form method="POST" action="{{ route('logout') }}">
