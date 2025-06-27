@@ -61,8 +61,8 @@ class DummyAccountController extends Controller
     {
         $validated = $request->validate([
             'username' => [
-                'required', 
-                'string', 
+                'required',
+                'string',
                 'max:255',
                 Rule::unique('dummy_accounts')->ignore($dummyAccount->id),
             ],
@@ -71,11 +71,11 @@ class DummyAccountController extends Controller
         ]);
 
         $dummyAccount->username = $validated['username'];
-        
+
         if ($request->filled('password')) {
             $dummyAccount->password = $validated['password'];
         }
-        
+
         $dummyAccount->platform = $validated['platform'];
         $dummyAccount->save();
 

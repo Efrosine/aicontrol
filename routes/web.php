@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\CctvController;
 use App\Http\Controllers\DummyAccountController;
 use App\Http\Controllers\SuspectedAccountController;
 use App\Http\Controllers\UserController;
@@ -29,12 +30,15 @@ Route::middleware(['auth'])->group(function () {
 
         // User management routes
         Route::resource('users', UserController::class);
-        
+
         // Dummy Account management routes
         Route::resource('dummy-accounts', DummyAccountController::class);
-        
+
         // Suspected Account management routes
         Route::resource('suspected-accounts', SuspectedAccountController::class);
+
+        // CCTV management routes
+        Route::resource('cctvs', CctvController::class);
     });
 
     // Home route for regular users
@@ -44,7 +48,10 @@ Route::middleware(['auth'])->group(function () {
         }
         return view('home');
     })->name('home');
-    
+
+    // CCTV view for regular users
+    Route::get('/cctv-view', [CctvController::class, 'userView'])->name('cctv.user-view');
+
     // Redirect authenticated users to their proper dashboard
     Route::get('/', function () {
         if (auth()->user()->role === 'admin') {
