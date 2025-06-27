@@ -14,6 +14,16 @@
                         </div>
                     </div>
                 </div>
+                <div class="card bg-info text-info-content">
+                    <div class="card-body">
+                        <h3 class="card-title">Social Media Scraper</h3>
+                        <p>Analyze social media accounts using the scraper tool</p>
+                        <div class="card-actions justify-end">
+                            <a href="{{ route('admin.scraper.form') }}" class="btn btn-sm btn-info">Open Scraper</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 @endsection

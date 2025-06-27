@@ -39,6 +39,12 @@ Route::middleware(['auth'])->group(function () {
 
         // CCTV management routes
         Route::resource('cctvs', CctvController::class);
+
+        // Instagram Scraper routes
+        Route::get('admin/scraper', [\App\Http\Controllers\AdminScraperController::class, 'showForm'])->name('admin.scraper.form');
+        Route::post('admin/scraper', [\App\Http\Controllers\AdminScraperController::class, 'submit'])->name('admin.scraper.submit');
+        Route::get('admin/scraper/results/{id}', [\App\Http\Controllers\AdminScraperController::class, 'showResults'])->name('admin.scraper.results');
+        Route::get('admin/scraper-results', [\App\Http\Controllers\AdminScraperController::class, 'index'])->name('admin.scraper.results.list');
     });
 
     // Home route for regular users
@@ -51,6 +57,10 @@ Route::middleware(['auth'])->group(function () {
 
     // CCTV view for regular users
     Route::get('/cctv-view', [CctvController::class, 'userView'])->name('cctv.user-view');
+
+    // User-facing Instagram Scraper results
+    Route::get('scraper-results', [\App\Http\Controllers\AdminScraperController::class, 'userIndex'])->name('scraper.results.list');
+    Route::get('scraper-results/{id}', [\App\Http\Controllers\AdminScraperController::class, 'userShow'])->name('scraper.results');
 
     // Redirect authenticated users to their proper dashboard
     Route::get('/', function () {
