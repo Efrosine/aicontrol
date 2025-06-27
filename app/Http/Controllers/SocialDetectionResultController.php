@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class SocailDetectionResultController extends Controller
+class SocialDetectionResultController extends Controller
 {
     //
 }

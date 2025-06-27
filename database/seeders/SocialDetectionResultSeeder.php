@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class SocailDetectionResultSeeder extends Seeder
+class SocialDetectionResultSeeder extends Seeder
 {
     /**
      * Run the database seeds.

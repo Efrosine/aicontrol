@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('socail_detection_results', function (Blueprint $table) {
+        Schema::create('social_detection_results', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('scraped_data_id');
-            $table->foreign('scraped_data_id')->references('id')->on('scraped_data')->onDelete('cascade');
+            $table->foreignId('scraped_data_id')->constrained('scraped_data')->onDelete('cascade');
             $table->json('data');
             $table->timestamps();
         });
@@ -25,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('socail_detection_results');
+        Schema::dropIfExists('social_detection_results');
     }
 };
