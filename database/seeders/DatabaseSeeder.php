@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DummyAccountSeeder::class,
             ScrapedDataSeeder::class,
             ScrapedDataResultSeeder::class,
+            SuspectedAccountSeeder::class,
             // Add more seeders as needed
         ]);
     }

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('suspected_accounts', function (Blueprint $table) {
             $table->id();
             $table->string('data')->unique();
+            $table->enum('platform', ['ig', 'x', 'twitter'])->default('ig');
             $table->timestamps();
         });
     }

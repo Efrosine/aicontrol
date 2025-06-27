@@ -45,6 +45,16 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="card bg-error text-error-content">
+                <div class="card-body">
+                    <h3 class="card-title">Suspected Accounts</h3>
+                    <p>Manage suspected accounts database</p>
+                    <div class="card-actions justify-end">
+                        <a href="{{ route('suspected-accounts.index') }}" class="btn btn-sm">View</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

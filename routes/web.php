@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DummyAccountController;
+use App\Http\Controllers\SuspectedAccountController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,9 @@ Route::middleware(['auth'])->group(function () {
         
         // Dummy Account management routes
         Route::resource('dummy-accounts', DummyAccountController::class);
+        
+        // Suspected Account management routes
+        Route::resource('suspected-accounts', SuspectedAccountController::class);
     });
 
     // Home route for regular users
