@@ -66,7 +66,7 @@ class DummyAccountController extends Controller
                 'max:255',
                 Rule::unique('dummy_accounts')->ignore($dummyAccount->id),
             ],
-            'password' => 'sometimes|string|min:6',
+            'password' => 'sometimes|nullable|string|min:6',
             'platform' => 'required|in:ig,x,twitter',
         ]);
 

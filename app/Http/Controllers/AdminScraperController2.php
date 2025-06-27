@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\DummyAccount;
 use Illuminate\Support\Facades\Log;
 
-class AdminScraperController extends Controller
+class AdminScraperController2 extends Controller
 {
     public function showForm()
     {
@@ -26,6 +26,9 @@ class AdminScraperController extends Controller
 
     public function submit(Request $request)
     {
+        // Log request data for debugging
+        Log::info('Request data: ' . json_encode($request->all()));
+
         $validated = $request->validate([
             'platform' => 'required|in:ig,x,twitter',
             'accounts' => 'required|string|exists:dummy_accounts,username',
@@ -39,38 +42,31 @@ class AdminScraperController extends Controller
             ->first(['username', 'password']);
 
         if (!$account) {
+            Log::error('Account not found: ' . $validated['accounts']);
             return back()->withErrors(['accounts' => 'Selected account not found.']);
         }
 
         // Prepare payload with accounts as array containing one object
         $payload = [
-            'platform' => $validated['platform'],
-            'accounts' => [
-                [
-                    'username' => $account->username,
-                    'password' => $account->password,
-                ]
-            ],
             'suspected_account' => $validated['suspected_account'],
             'post_count' => (int) $validated['post_count'],
             'comment_count' => (int) $validated['comment_count'],
         ];
 
-        // Log the payload for debugging
-        Log::info('Payload to ig-scraper: ' . json_encode($payload));
+        // Convert payload to JSON string
+        $payloadJson = json_encode($payload);
 
-        // Save input parameters
-        $scrapedData = ScrapedData::create([
-            'input_query' => json_encode($payload),
-        ]);
 
-        dd($payload);
+        Log::info('Payload to ig-scraper: ' . $payloadJson);
 
-        // Make HTTP POST to ig-scraper with explicit JSON header
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ])->timeout(60)->post('http://ig-scraper:5000/scrape', $payload);
+        // Make HTTP POST to ig-scraper with raw JSON body
+       $response = Http::acceptJson()
+       ->timeout(0) // Set a timeout for the request
+    ->post('http://ig-scraper:5000/scrape', $payload);
+
+
+        // Log response for debugging
+        Log::info('Response from ig-scraper: ' . $response->body());
 
         // Check if response is successful
         if ($response->failed()) {
@@ -78,14 +74,26 @@ class AdminScraperController extends Controller
             return back()->withErrors(['scraper' => 'Failed to fetch data from scraper.']);
         }
 
-        $results = $response->json('results');
+$results = $response->json('results');
+      // Filter results to include only desired fields
+$filteredResults = array_map(function ($result) {
+    return [
+        'caption' => $result['caption'],
+        'comments' => array_values($result['comments']), // Convert comments object to array
+    ];
+}, $results);
 
-        // Save results
-        $scrapedResult = ScrapedResult::create([
-            'account' => $validated['suspected_account'],
-            'data' => json_encode($results),
-            'url' => $results['url'] ?? '',
-        ]);
+// Save input parameters
+$scrapedData = ScrapedData::create([
+    'input_query' => $payloadJson,
+]);
+
+// Save filtered results
+$scrapedResult = ScrapedResult::create([
+    'account' => $validated['suspected_account'],
+    'data' => json_encode($filteredResults),
+    'url' => $results[0]['url'] ?? '', // Assuming the first result has the URL
+]);
 
         // Link the records
         ScrapedDataResult::create([
