@@ -45,6 +45,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('admin/scraper', [\App\Http\Controllers\AdminScraperController2::class, 'submit'])->name('admin.scraper.submit');
         Route::get('admin/scraper/results/{id}', [\App\Http\Controllers\AdminScraperController2::class, 'showResults'])->name('admin.scraper.results');
         Route::get('admin/scraper-results', [\App\Http\Controllers\AdminScraperController2::class, 'index'])->name('admin.scraper.results.list');
+
+        Route::get('admin/analyze/{id}/{text}', [\App\Http\Controllers\SocialDetectionResultController::class, 'analyze'])->name('admin.scraper.analyze');
+
+        // Social Detection Results route
+        Route::get('admin/social-detection-results', [\App\Http\Controllers\SocialDetectionResultController::class, 'index'])->name('admin.social_detection_results.index');
+
     });
 
     // Home route for regular users

@@ -107,7 +107,19 @@ $scrapedResult = ScrapedResult::create([
     public function showResults($id)
     {
         $result = ScrapedResult::findOrFail($id);
-        return view('admin.scraper_results', ['result' => $result]);
+        Log::info('Showing results for text: ' . $result->data);
+        $decoded = json_decode($result->data, true);
+        $text = '';
+        foreach ($decoded as $item) {
+            $text .= ($item['caption'] ?? '') . "\n";
+            if (!empty($item['comments']) && is_array($item['comments'])) {
+            foreach ($item['comments'] as $comment) {
+                $text .= ($comment ?? '') . "\n";
+            }
+            }
+        }
+        $text = trim($text);
+        return view('admin.scraper_results', ['result' => $result, 'text' => $text]);
     }
 
     public function index()
@@ -125,6 +137,18 @@ $scrapedResult = ScrapedResult::create([
     public function userShow($id)
     {
         $result = ScrapedResult::findOrFail($id);
-        return view('scraper_results', compact('result'));
+        Log::info('Showing results for text: ' . $result->data);
+          $decoded = json_decode($result->data, true);
+        $text = '';
+        foreach ($decoded as $item) {
+            $text .= ($item['caption'] ?? '') . "\n";
+            if (!empty($item['comments']) && is_array($item['comments'])) {
+            foreach ($item['comments'] as $comment) {
+                $text .= ($comment ?? '') . "\n";
+            }
+            }
+        }
+        $text = trim($text);
+        return view('scraper_results', compact('result', 'text'));
     }
 }

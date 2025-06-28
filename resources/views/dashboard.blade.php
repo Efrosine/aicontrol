@@ -64,6 +64,16 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="card bg-warning text-warning-content">
+                    <div class="card-body">
+                        <h3 class="card-title">History Social Media Analyze</h3>
+                        <p>View all social media analyze results</p>
+                        <div class="card-actions justify-end">
+                            <a href="{{ route('admin.social_detection_results.index') }}" class="btn btn-sm">View</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

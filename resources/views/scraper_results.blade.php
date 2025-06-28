@@ -8,7 +8,8 @@
                 <pre
                     class="mockup-code overflow-x-auto"><code>{{ json_encode(json_decode($result->data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</code></pre>
                 <div class="card-actions justify-end mt-4">
-                    <a href="#" class="btn btn-primary">Analyze</a>
+                    <a href="{{ route('admin.scraper.analyze', ['id' => $result->id, 'text' => $text]) }}" class="btn btn-primary">Analyz3</a>
+                     
                     <a href="{{ route('scraper.results.list') }}" class="btn btn-secondary">Back to Results</a>
                 </div>
             </div>
