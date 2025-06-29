@@ -6,6 +6,7 @@ use App\Http\Controllers\CctvSettingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DetectionArchiveController;
 use App\Http\Controllers\DummyAccountController;
+use App\Http\Controllers\StorageSettingsController;
 use App\Http\Controllers\SuspectedAccountController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -73,6 +74,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/detection-archive', [DetectionArchiveController::class, 'index'])->name('admin.security.detection-archive');
         Route::get('admin/detection-archive/preview', [DetectionArchiveController::class, 'preview'])->name('admin.security.detection-archive.preview');
         Route::get('admin/detection-archive/download', [DetectionArchiveController::class, 'download'])->name('admin.security.detection-archive.download');
+        
+        // Storage Settings routes
+        Route::put('admin/storage-settings', [StorageSettingsController::class, 'updateSettings'])->name('admin.storage.settings.update');
+        Route::post('admin/storage-settings/test', [StorageSettingsController::class, 'testConnection'])->name('admin.storage.settings.test');
         
         Route::get('admin/notifications', function () {
             return view('admin.notifications');
