@@ -51,6 +51,19 @@ Route::middleware(['auth'])->group(function () {
         // Social Detection Results route
         Route::get('admin/social-detection-results', [\App\Http\Controllers\SocialDetectionResultController::class, 'index'])->name('admin.social_detection_results.index');
 
+        // Additional routes for navigation completeness
+        Route::get('admin/security-alerts', function () {
+            return view('admin.security-alerts');
+        })->name('admin.security.alerts');
+        
+        Route::get('admin/zone-management', function () {
+            return view('admin.zone-management');
+        })->name('admin.security.zones');
+        
+        Route::get('admin/notifications', function () {
+            return view('admin.notifications');
+        })->name('admin.notifications');
+
     });
 
     // Home route for regular users

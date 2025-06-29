@@ -3,7 +3,7 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Dummy Accounts</h1>
+        <h1 class="text-2xl font-bold">Accounts for Scrapping</h1>
         <a href="{{ route('dummy-accounts.create') }}" class="btn btn-primary">
             Add New Account
         </a>
@@ -51,7 +51,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center py-4">No dummy accounts found.</td>
+                        <td colspan="5" class="text-center py-4">No scraper accounts found.</td>
                     </tr>
                 @endforelse
             </tbody>
