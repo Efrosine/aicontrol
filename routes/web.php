@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CctvController;
 use App\Http\Controllers\CctvSettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DetectionArchiveController;
 use App\Http\Controllers\DummyAccountController;
 use App\Http\Controllers\SuspectedAccountController;
 use App\Http\Controllers\UserController;
@@ -68,6 +69,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/zone-management', function () {
             return view('admin.zone-management');
         })->name('admin.security.zones');
+        
+        Route::get('admin/detection-archive', [DetectionArchiveController::class, 'index'])->name('admin.security.detection-archive');
+        Route::get('admin/detection-archive/preview', [DetectionArchiveController::class, 'preview'])->name('admin.security.detection-archive.preview');
+        Route::get('admin/detection-archive/download', [DetectionArchiveController::class, 'download'])->name('admin.security.detection-archive.download');
         
         Route::get('admin/notifications', function () {
             return view('admin.notifications');
