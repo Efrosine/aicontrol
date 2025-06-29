@@ -145,29 +145,43 @@
             <!-- Recent Activity -->
             <div class="card bg-base-100 shadow-xl border border-base-300 lg:col-span-2">
                 <div class="card-body">
-                    <h3 class="card-title text-xl mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Recent Activity
-                    </h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center space-x-3 p-3 bg-base-200 rounded-lg">
-                            <div class="badge badge-success">NEW</div>
-                            <span class="flex-1">Social media scraping completed for Instagram</span>
-                            <span class="text-sm opacity-60">2 min ago</span>
-                        </div>
-                        <div class="flex items-center space-x-3 p-3 bg-base-200 rounded-lg">
-                            <div class="badge badge-warning">ALERT</div>
-                            <span class="flex-1">Suspicious activity detected on Camera #3</span>
-                            <span class="text-sm opacity-60">15 min ago</span>
-                        </div>
-                        <div class="flex items-center space-x-3 p-3 bg-base-200 rounded-lg">
-                            <div class="badge badge-info">UPDATE</div>
-                            <span class="flex-1">New suspected account added to monitoring</span>
-                            <span class="text-sm opacity-60">1 hour ago</span>
-                        </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="card-title text-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Recent Activity
+                        </h3>
+                        <a href="{{ route('dashboard.activities') }}" class="btn btn-sm btn-outline">View All</a>
                     </div>
+                    
+                    @if($recentActivities && $recentActivities->count() > 0)
+                        <div class="space-y-3">
+                            @foreach($recentActivities as $activity)
+                                <div class="flex items-center space-x-3 p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                                    <div class="badge {{ $activity->badge_class }}">{{ $activity->badge_text }}</div>
+                                    <div class="flex-1">
+                                        <div class="font-medium text-sm">{{ $activity->title }}</div>
+                                        <div class="text-xs opacity-70">{{ $activity->description }}</div>
+                                        @if($activity->user)
+                                            <div class="text-xs opacity-50 mt-1">by {{ $activity->user->username }}</div>
+                                        @endif
+                                    </div>
+                                    <span class="text-sm opacity-60">{{ $activity->time_ago }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-8">
+                            <div class="text-base-content/50 mb-2">
+                                <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-base-content/70">No recent activities</p>
+                            <p class="text-xs text-base-content/50">Activity will appear here as you use the system</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

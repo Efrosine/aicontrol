@@ -54,7 +54,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </summary>
-                                <ul class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-300">
+                                <ul class="dropdown-content menu bg-base-100 rounded-box z-[9999] w-52 p-2 shadow-lg border border-base-300" style="z-index: 9999 !important;">
                                     @if(auth()->user()->role === 'admin')
                                         <li><a href="{{ route('admin.scraper.form') }}" class="flex items-center">
                                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +103,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </summary>
-                                <ul class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-300">
+                                <ul class="dropdown-content menu bg-base-100 rounded-box z-[9999] w-52 p-2 shadow-lg border border-base-300" style="z-index: 9999 !important;">
                                     @if(auth()->user()->role === 'admin')
                                         <li><a href="{{ route('cctvs.index') }}" class="flex items-center">
                                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,7 +161,7 @@
                                 <span class="badge badge-xs badge-primary indicator-item">3</span>
                             </div>
                         </div>
-                        <div tabindex="0" class="dropdown-content card card-compact w-64 bg-base-100 shadow-lg z-[1]">
+                        <div tabindex="0" class="dropdown-content card card-compact w-64 bg-base-100 shadow-lg z-[9999]" style="z-index: 9999 !important;">
                             <div class="card-body">
                                 <h3 class="card-title text-sm">Notifications</h3>
                                 <div class="space-y-2">
@@ -198,7 +198,7 @@
                                 <span class="text-xl font-semibold">{{ substr(auth()->user()->username, 0, 1) }}</span>
                             </div>
                         </div>
-                        <ul tabindex="0" class="menu dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                        <ul tabindex="0" class="menu dropdown-content mt-3 z-[9999] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300" style="z-index: 9999 !important;">
                             <li class="menu-title">
                                 <span class="font-semibold">{{ auth()->user()->username }}</span>
                             </li>
@@ -242,7 +242,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </div>
-                        <ul tabindex="0" class="menu dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                        <ul tabindex="0" class="menu dropdown-content mt-3 z-[9999] p-2 shadow bg-base-100 rounded-box w-52" style="z-index: 9999 !important;">
                             <li><a href="{{ auth()->user()->role === 'admin' ? route('dashboard') : route('home') }}">Dashboard</a></li>
                             <li><a>Social Media</a></li>
                             <li><a>Security</a></li>
@@ -254,7 +254,38 @@
                 </div>
             </div>
         @endauth
-
+        <style>
+            /* Fix dropdown z-index issues */
+            .dropdown-content,
+            .dropdown .dropdown-content {
+                z-index: 9999 !important;
+                position: relative;
+            }
+            
+            /* Ensure dropdown menus appear above all content */
+            .navbar .dropdown-content {
+                z-index: 9999 !important;
+            }
+            
+            /* Fix for DaisyUI dropdown positioning */
+            .dropdown:hover .dropdown-content,
+            .dropdown.dropdown-open .dropdown-content,
+            .dropdown:focus .dropdown-content,
+            .dropdown:focus-within .dropdown-content {
+                z-index: 9999 !important;
+            }
+            
+            /* Ensure proper stacking context */
+            .navbar {
+                z-index: 1000;
+                position: relative;
+            }
+            
+            /* Make sure dropdown content is properly positioned */
+            details[open] > summary ~ * {
+                z-index: 9999 !important;
+            }
+        </style>
         <!-- Page Content -->
         <main>
             @yield('content')

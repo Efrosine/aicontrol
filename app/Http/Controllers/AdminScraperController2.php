@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ScrapedData;
 use App\Models\ScrapedResult;
 use App\Models\ScrapedDataResult;
+use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +72,15 @@ class AdminScraperController2 extends Controller
         // Check if response is successful
         if ($response->failed()) {
             Log::error('ig-scraper request failed: ' . $response->body());
+            
+            // Log the failed scraping activity
+            $platformName = $validated['platform'] === 'ig' ? 'Instagram' : ($validated['platform'] === 'x' ? 'X (Twitter)' : 'Twitter');
+            ActivityService::logScrapingActivity(
+                action: 'failed',
+                platform: $platformName,
+                status: 'error'
+            );
+            
             return back()->withErrors(['scraper' => 'Failed to fetch data from scraper.']);
         }
 
@@ -100,6 +110,15 @@ $scrapedResult = ScrapedResult::create([
             'scraped_data_id' => $scrapedData->id,
             'scraped_result_id' => $scrapedResult->id,
         ]);
+
+        // Log the scraping activity
+        $platformName = $validated['platform'] === 'ig' ? 'Instagram' : ($validated['platform'] === 'x' ? 'X (Twitter)' : 'Twitter');
+        ActivityService::logScrapingActivity(
+            action: 'completed',
+            platform: $platformName,
+            count: count($filteredResults),
+            status: 'success'
+        );
 
         return redirect()->route('admin.scraper.results', ['id' => $scrapedResult->id]);
     }

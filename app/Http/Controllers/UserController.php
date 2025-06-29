@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -40,7 +41,15 @@ class UserController extends Controller
 
         $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+        $newUser = User::create($validated);
+
+        // Log user creation activity
+        ActivityService::logUserActivity(
+            action: 'created',
+            subject: 'user',
+            status: 'success',
+            related: $newUser
+        );
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully.');
@@ -83,6 +92,14 @@ class UserController extends Controller
 
         $user->update($validated);
 
+        // Log user update activity
+        ActivityService::logUserActivity(
+            action: 'updated',
+            subject: 'user',
+            status: 'success',
+            related: $user
+        );
+
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
     }
@@ -98,7 +115,15 @@ class UserController extends Controller
                 ->with('error', 'You cannot delete your own account.');
         }
 
+        $userName = $user->username;
         $user->delete();
+
+        // Log user deletion activity
+        ActivityService::logUserActivity(
+            action: 'deleted',
+            subject: "user ({$userName})",
+            status: 'warning'
+        );
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully.');

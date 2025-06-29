@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CctvController;
+use App\Http\Controllers\CctvSettingsController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DummyAccountController;
 use App\Http\Controllers\SuspectedAccountController;
 use App\Http\Controllers\UserController;
@@ -24,9 +26,8 @@ Route::middleware(['auth'])->group(function () {
     // Admin routes
     Route::middleware(['admin'])->group(function () {
         // Dashboard route for admins
-        Route::get('/dashboard', function () {
-            return view('dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/activities', [DashboardController::class, 'activities'])->name('dashboard.activities');
 
         // User management routes
         Route::resource('users', UserController::class);
@@ -39,6 +40,14 @@ Route::middleware(['auth'])->group(function () {
 
         // CCTV management routes
         Route::resource('cctvs', CctvController::class);
+        Route::get('cctvs/{id}/stream', [CctvController::class, 'stream'])->name('cctvs.stream');
+        Route::get('cctvs/{id}/status', [CctvController::class, 'status'])->name('cctvs.status');
+        Route::put('cctvs/detection-config', [CctvController::class, 'updateDetectionConfig'])->name('cctvs.detection.update');
+        
+        // CCTV Settings routes
+        Route::get('settings/cctv', [CctvSettingsController::class, 'index'])->name('settings.cctv.index');
+        Route::put('settings/cctv', [CctvSettingsController::class, 'update'])->name('settings.cctv.update');
+        Route::post('settings/cctv/test', [CctvSettingsController::class, 'testConnection'])->name('settings.cctv.test');
 
         // Instagram Scraper routes
         Route::get('admin/scraper', [\App\Http\Controllers\AdminScraperController2::class, 'showForm'])->name('admin.scraper.form');
