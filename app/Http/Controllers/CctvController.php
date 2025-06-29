@@ -65,13 +65,8 @@ class CctvController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'ip_address' => 'required|ip',
-            'port' => 'required|integer|between:1,65535',
-            'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:255',
+            'ip_address' => 'required|string|max:255', // Allow URLs and IPs
             'location' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-            'enabled' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -81,15 +76,12 @@ class CctvController extends Controller
                 ->withInput();
         }
 
+        // Only send the fields required by the external API
         $cameraData = [
             'name' => $request->name,
             'ip_address' => $request->ip_address,
-            'port' => $request->port,
-            'username' => $request->username,
-            'password' => $request->password,
             'location' => $request->location,
-            'description' => $request->description,
-            'enabled' => $request->boolean('enabled', true),
+            'status' => 'active', // Always set to active as required by API
         ];
 
         $result = $this->cctvService->createCamera($cameraData);
@@ -101,11 +93,13 @@ class CctvController extends Controller
                 ->with('error', 'Failed to create camera. Please check the CCTV service connection.');
         }
 
-        ActivityService::logSecurityActivity(
+        ActivityService::logCctvActivity(
             'created',
+            $request->name,
             $request->location,
-            "New camera '{$request->name}' added",
-            'success'
+            "Camera added via web interface with IP: {$request->ip_address}",
+            'success',
+            auth()->user()
         );
 
         return redirect()
@@ -158,13 +152,8 @@ class CctvController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'ip_address' => 'required|ip',
-            'port' => 'required|integer|between:1,65535',
-            'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:255',
+            'ip_address' => 'required|string|max:255', // Allow URLs and IPs
             'location' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-            'enabled' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -174,15 +163,12 @@ class CctvController extends Controller
                 ->withInput();
         }
 
+        // Only send the fields required by the external API
         $cameraData = [
             'name' => $request->name,
             'ip_address' => $request->ip_address,
-            'port' => $request->port,
-            'username' => $request->username,
-            'password' => $request->password,
             'location' => $request->location,
-            'description' => $request->description,
-            'enabled' => $request->boolean('enabled', true),
+            'status' => 'active', // Always set to active as required by API
         ];
 
         $result = $this->cctvService->updateCamera($id, $cameraData);
@@ -194,11 +180,13 @@ class CctvController extends Controller
                 ->with('error', 'Failed to update camera. Please check the CCTV service connection.');
         }
 
-        ActivityService::logSecurityActivity(
+        ActivityService::logCctvActivity(
             'updated',
+            $request->name,
             $request->location,
-            "Camera '{$request->name}' settings updated",
-            'info'
+            "Camera configuration updated via web interface",
+            'info',
+            auth()->user()
         );
 
         return redirect()
@@ -223,11 +211,13 @@ class CctvController extends Controller
         }
 
         if ($camera) {
-            ActivityService::logSecurityActivity(
+            ActivityService::logCctvActivity(
                 'deleted',
+                $camera['name'] ?? 'Unknown Camera',
                 $camera['location'] ?? 'Unknown location',
-                "Camera '{$camera['name']}' removed from system",
-                'warning'
+                "Camera removed via web interface",
+                'warning',
+                auth()->user()
             );
         }
 
@@ -265,11 +255,13 @@ class CctvController extends Controller
             return response()->json(['error' => 'Failed to update detection configuration'], 500);
         }
 
-        ActivityService::logSystemActivity(
-            'updated',
-            'Detection Settings',
-            'Global detection configuration updated',
-            'info'
+        ActivityService::logCctvActivity(
+            'detection_updated',
+            'System',
+            'Global Settings',
+            "Detection configuration updated: record_duration={$config['record_duration']}s, video=" . ($config['enable_video'] ? 'enabled' : 'disabled') . ", screenshot=" . ($config['enable_screenshot'] ? 'enabled' : 'disabled'),
+            'info',
+            auth()->user()
         );
 
         return response()->json(['success' => true, 'config' => $result]);

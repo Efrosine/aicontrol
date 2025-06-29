@@ -59,11 +59,13 @@ class CctvSettingsController extends Controller
             Artisan::call('config:clear');
 
             // Log the activity
-            ActivityService::logSystemActivity(
-                'updated',
-                'CCTV Settings',
-                "Base URL changed from " . config('cctv.service.base_url') . " to " . $request->base_url,
-                'success'
+            ActivityService::logCctvActivity(
+                'service_configured',
+                'CCTV Service',
+                'System Configuration',
+                "Service settings updated - Base URL: {$request->base_url}, Timeout: {$request->timeout}s",
+                'success',
+                auth()->user()
             );
 
             return redirect()->route('settings.cctv.index')
@@ -82,11 +84,13 @@ class CctvSettingsController extends Controller
     {
         $status = $this->cctvService->getServiceStatus();
         
-        ActivityService::logSystemActivity(
-            'tested',
-            'CCTV Connection',
-            "Service status: " . $status['status'] . " at " . config('cctv.service.base_url'),
-            $status['status'] === 'online' ? 'success' : 'error'
+        ActivityService::logCctvActivity(
+            $status['status'] === 'online' ? 'service_connected' : 'service_disconnected',
+            'CCTV Service',
+            'Connection Test',
+            "Connection test performed - Status: {$status['status']} at " . config('cctv.service.base_url'),
+            $status['status'] === 'online' ? 'success' : 'error',
+            auth()->user()
         );
 
         return response()->json($status);

@@ -65,115 +65,26 @@
                     <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                 @enderror
             </div>
-
-            <!-- IP Address -->
-            <div>
-                <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-2">
-                    IP Address <span class="text-red-500">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    name="ip_address" 
-                    id="ip_address" 
-                    value="{{ old('ip_address') }}" 
-                    required
-                    pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('ip_address') border-red-500 @enderror"
-                    placeholder="e.g., 192.168.1.100"
-                >
-                @error('ip_address')
-                    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Port -->
-            <div>
-                <label for="port" class="block text-sm font-medium text-gray-700 mb-2">
-                    Port <span class="text-red-500">*</span>
-                </label>
-                <input 
-                    type="number" 
-                    name="port" 
-                    id="port" 
-                    value="{{ old('port', 80) }}" 
-                    min="1" 
-                    max="65535"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('port') border-red-500 @enderror"
-                    placeholder="e.g., 80, 554, 8080"
-                >
-                @error('port')
-                    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Username -->
-            <div>
-                <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                    Username
-                </label>
-                <input 
-                    type="text" 
-                    name="username" 
-                    id="username" 
-                    value="{{ old('username') }}" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('username') border-red-500 @enderror"
-                    placeholder="Camera username (optional)"
-                >
-                @error('username')
-                    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Password -->
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                </label>
-                <input 
-                    type="password" 
-                    name="password" 
-                    id="password" 
-                    value="{{ old('password') }}" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('password') border-red-500 @enderror"
-                    placeholder="Camera password (optional)"
-                >
-                @error('password')
-                    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                @enderror
-            </div>
         </div>
 
-        <!-- Description -->
+        <!-- IP Address or URL -->
         <div>
-            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                Description
+            <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-2">
+                IP Address or URL <span class="text-red-500">*</span>
             </label>
-            <textarea 
-                name="description" 
-                id="description" 
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('description') border-red-500 @enderror"
-                placeholder="Additional details about this camera..."
-            >{{ old('description') }}</textarea>
-            @error('description')
+            <input 
+                type="text" 
+                name="ip_address" 
+                id="ip_address" 
+                value="{{ old('ip_address') }}" 
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('ip_address') border-red-500 @enderror"
+                placeholder="e.g., 192.168.1.100 or http://camera.example.com:8080"
+            >
+            <p class="mt-1 text-sm text-gray-500">Enter the camera's IP address or full URL including protocol and port</p>
+            @error('ip_address')
                 <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
             @enderror
-        </div>
-
-        <!-- Enabled Status -->
-        <div class="flex items-center">
-            <input 
-                type="checkbox" 
-                name="enabled" 
-                id="enabled" 
-                value="1"
-                {{ old('enabled', true) ? 'checked' : '' }}
-                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            >
-            <label for="enabled" class="ml-2 block text-sm text-gray-900">
-                Enable camera after creation
-            </label>
         </div>
 
         <!-- Submit Buttons -->
@@ -199,26 +110,24 @@
 
 @section('scripts')
 <script>
-// IP address validation
+// IP address or URL validation
 document.getElementById('ip_address').addEventListener('input', function(e) {
-    const value = e.target.value;
+    const value = e.target.value.trim();
+    
+    if (!value) {
+        e.target.setCustomValidity('IP address or URL is required');
+        return;
+    }
+    
+    // Check if it's a URL (starts with http:// or https://)
+    const urlPattern = /^https?:\/\/.+/i;
+    // Check if it's an IP address
     const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     
-    if (value && !ipPattern.test(value)) {
-        e.target.setCustomValidity('Please enter a valid IP address');
-    } else {
+    if (urlPattern.test(value) || ipPattern.test(value)) {
         e.target.setCustomValidity('');
-    }
-});
-
-// Port validation
-document.getElementById('port').addEventListener('input', function(e) {
-    const value = parseInt(e.target.value);
-    
-    if (value < 1 || value > 65535) {
-        e.target.setCustomValidity('Port must be between 1 and 65535');
     } else {
-        e.target.setCustomValidity('');
+        e.target.setCustomValidity('Please enter a valid IP address (e.g., 192.168.1.100) or URL (e.g., http://camera.example.com:8080)');
     }
 });
 </script>

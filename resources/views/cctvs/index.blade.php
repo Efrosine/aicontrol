@@ -71,24 +71,26 @@
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900">{{ $camera['name'] ?? 'Unknown' }}</div>
-                                        <div class="text-sm text-gray-500">{{ $camera['description'] ?? 'No description' }}</div>
+                                        <!-- <div class="text-sm text-gray-500">{{ $camera['description'] ?? 'No description' }}</div> -->
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $camera['location'] ?? 'Unknown' }}</div>
-                                <div class="text-sm text-gray-500">{{ $camera['ip_address'] ?? '' }}:{{ $camera['port'] ?? '' }}</div>
+                                <div class="text-sm text-gray-500">{{ $camera['ip_address'] ?? '' }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">
-                                    IP: {{ $camera['ip_address'] ?? 'N/A' }}
+                                    {{ $camera['ip_address'] ?? 'N/A' }}
                                 </div>
+                                @if(isset($camera['status']))
                                 <div class="text-sm text-gray-500">
-                                    Port: {{ $camera['port'] ?? 'N/A' }}
+                                    Status: {{ ucfirst($camera['status']) }}
                                 </div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if(isset($camera['enabled']) && $camera['enabled'])
+                                @if(isset($camera['status']) && $camera['status'] === 'active')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         <div class="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
                                         Online

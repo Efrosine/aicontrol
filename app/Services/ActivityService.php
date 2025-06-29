@@ -152,6 +152,124 @@ class ActivityService
     }
 
     /**
+     * Log a CCTV management activity (only for operations from this system)
+     */
+    public static function logCctvActivity(
+        string $action,
+        string $cameraName,
+        string $location,
+        string $details = '',
+        string $status = 'info',
+        ?User $user = null,
+        array $metadata = []
+    ): Activity {
+        $titles = [
+            'created' => 'Camera Added',
+            'updated' => 'Camera Updated',
+            'deleted' => 'Camera Removed',
+            'configured' => 'Camera Configured',
+            'status_changed' => 'Camera Status Changed',
+            'service_connected' => 'CCTV Service Connected',
+            'service_disconnected' => 'CCTV Service Disconnected',
+            'service_configured' => 'CCTV Service Configured',
+            'detection_updated' => 'Detection Settings Updated',
+        ];
+
+        $descriptions = [
+            'created' => "Camera '{$cameraName}' added to location: {$location}",
+            'updated' => "Camera '{$cameraName}' configuration updated at {$location}",
+            'deleted' => "Camera '{$cameraName}' removed from location: {$location}",
+            'configured' => "Camera '{$cameraName}' settings configured at {$location}",
+            'status_changed' => "Camera '{$cameraName}' status changed at {$location}",
+            'service_connected' => "CCTV service connection established",
+            'service_disconnected' => "CCTV service connection lost",
+            'service_configured' => "CCTV service configuration updated",
+            'detection_updated' => "Detection configuration updated for CCTV system",
+        ];
+
+        if ($details) {
+            $descriptions[$action] = ($descriptions[$action] ?? "CCTV {$action} for {$cameraName}") . " - {$details}";
+        }
+
+        $defaultMetadata = [
+            'camera_name' => $cameraName,
+            'location' => $location,
+            'initiated_from' => 'web_interface',
+            'details' => $details
+        ];
+
+        return Activity::log(
+            type: 'cctv',
+            action: $action,
+            title: $titles[$action] ?? "CCTV {$action}",
+            description: $descriptions[$action] ?? "CCTV {$action} for camera {$cameraName} at {$location}",
+            status: $status,
+            user: $user,
+            metadata: array_merge($defaultMetadata, $metadata)
+        );
+    }
+
+    /**
+     * Log CCTV status changes from external service (not initiated from this system)
+     */
+    public static function logCctvStatusChange(
+        string $cameraId,
+        string $cameraName,
+        string $location,
+        string $oldStatus,
+        string $newStatus,
+        string $source = 'external_service',
+        array $metadata = []
+    ): Activity {
+        $statusDetails = "Status changed from '{$oldStatus}' to '{$newStatus}'";
+        
+        $defaultMetadata = [
+            'camera_id' => $cameraId,
+            'camera_name' => $cameraName,
+            'location' => $location,
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'source' => $source,
+            'initiated_from' => 'external_service'
+        ];
+
+        return Activity::log(
+            type: 'cctv',
+            action: 'status_changed',
+            title: 'Camera Status Changed',
+            description: "Camera '{$cameraName}' at {$location}: {$statusDetails}",
+            status: $newStatus === 'online' ? 'success' : 'warning',
+            metadata: array_merge($defaultMetadata, $metadata)
+        );
+    }
+
+    /**
+     * Log CCTV service status changes
+     */
+    public static function logCctvServiceStatus(
+        string $serviceStatus,
+        string $details = '',
+        array $metadata = []
+    ): Activity {
+        $defaultMetadata = [
+            'service_status' => $serviceStatus,
+            'service_url' => config('cctv.service.base_url'),
+            'initiated_from' => 'external_service'
+        ];
+
+        return Activity::log(
+            type: 'cctv',
+            action: $serviceStatus === 'online' ? 'service_connected' : 'service_disconnected',
+            title: $serviceStatus === 'online' ? 'CCTV Service Online' : 'CCTV Service Offline',
+            description: $serviceStatus === 'online' 
+                ? "CCTV service connection established" . ($details ? " - {$details}" : "")
+                : "CCTV service connection lost" . ($details ? " - {$details}" : ""),
+            status: $serviceStatus === 'online' ? 'success' : 'error',
+            metadata: array_merge($defaultMetadata, $metadata)
+        );
+    }
+
+    /**
      * Get recent activities for dashboard
      */
     public static function getRecentActivities(int $limit = 10)
