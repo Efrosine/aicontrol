@@ -8,6 +8,19 @@
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 mb-2">Detection Archive</h1>
                 <p class="text-gray-600">Browse and manage recorded detection files from security cameras</p>
+                <!-- Storage Status Indicator -->
+                <div class="flex items-center mt-2">
+                    <span class="text-sm text-gray-500 mr-2">Storage Status:</span>
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 rounded-full mr-2 {{ $storageStatus['status'] === 'online' ? 'bg-green-500' : 'bg-red-500' }}"></div>
+                        <span class="text-sm font-medium {{ $storageStatus['status'] === 'online' ? 'text-green-600' : 'text-red-600' }}">
+                            {{ $storageStatus['status'] === 'online' ? 'Connected' : 'Not Connected' }}
+                        </span>
+                        @if($storageStatus['status'] === 'online' && isset($storageStatus['response_time']))
+                            <span class="text-xs text-gray-500 ml-1">({{ number_format($storageStatus['response_time'] * 1000, 0) }}ms)</span>
+                        @endif
+                    </div>
+                </div>
             </div>
             <div class="flex items-center space-x-3">
                 <div class="badge badge-info">{{ count($detectionFiles) }} files found</div>
