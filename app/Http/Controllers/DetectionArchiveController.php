@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cctv;
-use App\Http\Controllers\StorageSettingsController;
 use Illuminate\Http\Request;
 
 class DetectionArchiveController extends Controller
@@ -22,13 +21,7 @@ class DetectionArchiveController extends Controller
         
         $detectionFiles = $this->getMockDetectionFiles($selectedCamera, $selectedDate);
         
-        // Get storage settings
-        $storageController = new StorageSettingsController();
-        $storageData = $storageController->getSettings();
-        $storageSettings = $storageData['settings'];
-        $storageStatus = $storageData['storageStatus'];
-        
-        return view('admin.security.detection-archive', compact('cameras', 'detectionFiles', 'selectedCamera', 'selectedDate', 'storageSettings', 'storageStatus'));
+        return view('admin.security.detection-archive', compact('cameras', 'detectionFiles', 'selectedCamera', 'selectedDate'));
     }
     
     /**

@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\Http;
 class StorageSettingsController extends Controller
 {
     /**
+     * Display storage settings page
+     */
+    public function index()
+    {
+        $data = $this->getSettings();
+        $storageSettings = $data['settings'];
+        $storageStatus = $data['storageStatus'];
+
+        return view('admin.storage.settings', compact('storageSettings', 'storageStatus'));
+    }
+
+    /**
      * Display storage settings
      */
     public function getSettings()

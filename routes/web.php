@@ -76,6 +76,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/detection-archive/download', [DetectionArchiveController::class, 'download'])->name('admin.security.detection-archive.download');
         
         // Storage Settings routes
+        Route::get('admin/storage-settings', [StorageSettingsController::class, 'index'])->name('admin.storage.settings.index');
         Route::put('admin/storage-settings', [StorageSettingsController::class, 'updateSettings'])->name('admin.storage.settings.update');
         Route::post('admin/storage-settings/test', [StorageSettingsController::class, 'testConnection'])->name('admin.storage.settings.test');
         
