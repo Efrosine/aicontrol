@@ -52,7 +52,7 @@
                 <select name="camera" class="select select-bordered w-full" onchange="this.form.submit()">
                     <option value="all" {{ $selectedCamera == 'all' || !$selectedCamera ? 'selected' : '' }}>Show All Cameras</option>
                     @foreach($cameras as $camera)
-                        <option value="{{ $camera->name }}" {{ $selectedCamera == $camera->name ? 'selected' : '' }}>
+                        <option value="{{ $camera->id }}" {{ $selectedCamera == $camera->id ? 'selected' : '' }}>
                             {{ $camera->name }}
                         </option>
                     @endforeach
@@ -72,13 +72,13 @@
                 <label class="label">
                     <span class="label-text font-medium">Detection Type</span>
                 </label>
-                <select class="select select-bordered w-full">
-                    <option>All Types</option>
-                    <option>Person</option>
-                    <option>Vehicle</option>
-                    <option>Motion</option>
-                    <option>Face</option>
-                    <option>Package</option>
+                <select name="detection_type" class="select select-bordered w-full" onchange="this.form.submit()">
+                    <option value="all" {{ $selectedDetectionType == 'all' || !$selectedDetectionType ? 'selected' : '' }}>All Types</option>
+                    <option value="person" {{ $selectedDetectionType == 'person' ? 'selected' : '' }}>Person</option>
+                    <option value="vehicle" {{ $selectedDetectionType == 'vehicle' ? 'selected' : '' }}>Vehicle</option>
+                    <option value="motion" {{ $selectedDetectionType == 'motion' ? 'selected' : '' }}>Motion</option>
+                    <option value="face" {{ $selectedDetectionType == 'face' ? 'selected' : '' }}>Face</option>
+                    <option value="package" {{ $selectedDetectionType == 'package' ? 'selected' : '' }}>Package</option>
                 </select>
             </div>
 
@@ -87,12 +87,12 @@
                 <label class="label">
                     <span class="label-text font-medium">Time Range</span>
                 </label>
-                <select class="select select-bordered w-full">
-                    <option>All Day</option>
-                    <option>Morning (06:00-12:00)</option>
-                    <option>Afternoon (12:00-18:00)</option>
-                    <option>Evening (18:00-24:00)</option>
-                    <option>Night (00:00-06:00)</option>
+                <select name="time_range" class="select select-bordered w-full" onchange="this.form.submit()">
+                    <option value="all" {{ $selectedTimeRange == 'all' || !$selectedTimeRange ? 'selected' : '' }}>All Day</option>
+                    <option value="morning" {{ $selectedTimeRange == 'morning' ? 'selected' : '' }}>Morning (06:00-12:00)</option>
+                    <option value="afternoon" {{ $selectedTimeRange == 'afternoon' ? 'selected' : '' }}>Afternoon (12:00-18:00)</option>
+                    <option value="evening" {{ $selectedTimeRange == 'evening' ? 'selected' : '' }}>Evening (18:00-24:00)</option>
+                    <option value="night" {{ $selectedTimeRange == 'night' ? 'selected' : '' }}>Night (00:00-06:00)</option>
                 </select>
             </div>
         </form>
@@ -114,7 +114,6 @@
                         <th class="text-left">Detection</th>
                         <th class="text-left">Time</th>
                         <th class="text-left">Size</th>
-                        <th class="text-left">Confidence</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -139,7 +138,7 @@
                                 <div class="font-mono text-sm">{{ $file['filename'] }}</div>
                             </td>
                             <td>
-                                <div class="badge badge-outline">{{ $file['camera'] }}</div>
+                                <div class="badge badge-outline">{{ $file['camera_name'] }}</div>
                             </td>
                             <td>
                                 <div class="badge badge-secondary">{{ $file['detection_type'] }}</div>
@@ -154,23 +153,15 @@
                                 <div class="text-sm text-gray-600">{{ $file['size'] }}</div>
                             </td>
                             <td>
-                                <div class="flex items-center">
-                                    <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
-                                        <div class="bg-green-600 h-2 rounded-full" style="width: {{ $file['confidence'] }}%"></div>
-                                    </div>
-                                    <span class="text-xs text-gray-600">{{ $file['confidence'] }}%</span>
-                                </div>
-                            </td>
-                            <td>
                                 <div class="flex justify-center space-x-2">
-                                    <button class="btn btn-sm btn-outline btn-primary" onclick="previewFile('{{ $file['id'] }}', '{{ $file['type'] }}', '{{ $file['filename'] }}')">
+                                    <button class="btn btn-sm btn-outline btn-primary" onclick="previewFile('{{ $file['id'] }}', '{{ $file['type'] }}', '{{ $file['filename'] }}', '{{ $file['full_path'] }}')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                         </svg>
                                         View
                                     </button>
-                                    <button class="btn btn-sm btn-outline btn-success" onclick="downloadFile('{{ $file['id'] }}', '{{ $file['filename'] }}')">
+                                    <button class="btn btn-sm btn-outline btn-success" onclick="downloadFile('{{ $file['id'] }}', '{{ $file['filename'] }}', '{{ $file['full_path'] }}')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                         </svg>
@@ -181,7 +172,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-12">
+                            <td colspan="7" class="text-center py-12">
                                 <div class="flex flex-col items-center">
                                     <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 110 2h-1v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6H3a1 1 0 110-2h4zM6 6v12h12V6H6zm4 3a1 1 0 112 0v4a1 1 0 11-2 0v-4zm4 0a1 1 0 112 0v4a1 1 0 11-2 0v-4z"></path>
@@ -220,102 +211,159 @@
 <script>
 let currentFileId = null;
 let currentFileName = null;
+let currentFilePath = null;
 
-function previewFile(fileId, type, filename) {
+function previewFile(fileId, type, filename, filePath) {
     currentFileId = fileId;
     currentFileName = filename;
+    currentFilePath = filePath;
     
     document.getElementById('previewTitle').textContent = `Preview: ${filename}`;
     document.getElementById('previewModal').showModal();
     
-    // Simulate loading
+    // Show loading
     const previewContent = document.getElementById('previewContent');
     previewContent.innerHTML = '<div class="loading loading-spinner loading-lg"></div>';
     
-    // Mock preview content after short delay
-    setTimeout(() => {
-        if (type === 'video') {
-            previewContent.innerHTML = `
-                <div class="w-full">
-                    <div class="bg-black rounded-lg flex items-center justify-center h-96">
-                        <div class="text-center text-white">
-                            <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <p class="text-lg font-medium">Mock Video Preview</p>
-                            <p class="text-sm opacity-75">${filename}</p>
-                            <button class="btn btn-primary btn-sm mt-2">Play Video</button>
-                        </div>
-                    </div>
-                </div>`;
-        } else {
-            previewContent.innerHTML = `
-                <div class="w-full">
-                    <div class="bg-gray-200 rounded-lg flex items-center justify-center h-96">
-                        <div class="text-center text-gray-600">
-                            <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                            </svg>
-                            <p class="text-lg font-medium">Mock Image Preview</p>
-                            <p class="text-sm opacity-75">${filename}</p>
-                        </div>
-                    </div>
-                </div>`;
-        }
-    }, 1000);
-    
-    // Mock API call for preview
-    fetch(`{{ route('admin.security.detection-archive.preview') }}?file_id=${fileId}`)
+    // Make API call for preview
+    fetch(`{{ route('admin.security.detection-archive.preview') }}?file_id=${encodeURIComponent(fileId)}&file_path=${encodeURIComponent(filePath)}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Preview loaded:', data);
+            if (data.success) {
+                if (data.type === 'video') {
+                    previewContent.innerHTML = `
+                        <div class="w-full">
+                            <video controls class="w-full max-h-96 rounded-lg">
+                                <source src="${data.url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>`;
+                } else if (data.type === 'image') {
+                    previewContent.innerHTML = `
+                        <div class="w-full">
+                            <img src="${data.url}" alt="${filename}" class="w-full max-h-96 object-contain rounded-lg">
+                        </div>`;
+                } else {
+                    previewContent.innerHTML = `
+                        <div class="w-full">
+                            <div class="bg-gray-200 rounded-lg flex items-center justify-center h-96">
+                                <div class="text-center text-gray-600">
+                                    <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                    <p class="text-lg font-medium">File Preview Not Available</p>
+                                    <p class="text-sm opacity-75">${filename}</p>
+                                    <button class="btn btn-primary btn-sm mt-2" onclick="downloadCurrentFile()">Download File</button>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+            } else {
+                previewContent.innerHTML = `
+                    <div class="w-full">
+                        <div class="bg-red-50 rounded-lg flex items-center justify-center h-96">
+                            <div class="text-center text-red-600">
+                                <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
+                                </svg>
+                                <p class="text-lg font-medium">Preview Failed</p>
+                                <p class="text-sm opacity-75">${data.message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
         })
         .catch(error => {
             console.error('Preview error:', error);
+            previewContent.innerHTML = `
+                <div class="w-full">
+                    <div class="bg-red-50 rounded-lg flex items-center justify-center h-96">
+                        <div class="text-center text-red-600">
+                            <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
+                            </svg>
+                            <p class="text-lg font-medium">Preview Error</p>
+                            <p class="text-sm opacity-75">Unable to load preview</p>
+                        </div>
+                    </div>
+                </div>`;
         });
 }
 
-function downloadFile(fileId, filename) {
-    // Mock download functionality
+function downloadFile(fileId, filename, filePath) {
     console.log(`Downloading file: ${filename} (ID: ${fileId})`);
     
     // Show download notification
-    const toast = document.createElement('div');
-    toast.className = 'toast toast-top toast-end';
-    toast.innerHTML = `
-        <div class="alert alert-success">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <span>Mock download started for ${filename}</span>
-        </div>
-    `;
-    document.body.appendChild(toast);
+    showToast('info', `Preparing download for ${filename}...`);
     
-    // Remove toast after 3 seconds
-    setTimeout(() => {
-        document.body.removeChild(toast);
-    }, 3000);
-    
-    // Mock API call for download
-    fetch(`{{ route('admin.security.detection-archive.download') }}?file_id=${fileId}`)
+    // Make API call for download
+    fetch(`{{ route('admin.security.detection-archive.download') }}?file_id=${encodeURIComponent(fileId)}&file_path=${encodeURIComponent(filePath)}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Download initiated:', data);
+            if (data.success) {
+                // Create a temporary anchor element to trigger download
+                const link = document.createElement('a');
+                link.href = data.download_url;
+                link.download = data.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('success', `Download started for ${data.filename} (${data.size})`);
+            } else {
+                showToast('error', `Download failed: ${data.message}`);
+            }
         })
         .catch(error => {
             console.error('Download error:', error);
+            showToast('error', `Download failed for ${filename}`);
         });
 }
 
 function downloadCurrentFile() {
-    if (currentFileId && currentFileName) {
-        downloadFile(currentFileId, currentFileName);
+    if (currentFileId && currentFileName && currentFilePath) {
+        downloadFile(currentFileId, currentFileName, currentFilePath);
     }
 }
 
 function refreshArchive() {
     location.reload();
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-top toast-end';
+    
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'error' ? 'alert-error' : 'alert-info';
+    
+    const icon = type === 'success' ? 
+        `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>` :
+        type === 'error' ?
+        `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>` :
+        `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>`;
+    
+    toast.innerHTML = `
+        <div class="alert ${alertClass}">
+            ${icon}
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+        if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+        }
+    }, 3000);
 }
 
 // Auto-refresh every 30 seconds (optional)
