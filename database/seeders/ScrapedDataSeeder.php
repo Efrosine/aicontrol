@@ -12,6 +12,22 @@ class ScrapedDataSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        \DB::table('scraped_data')->insert([
+            [
+                'input_query' => 'example query 1',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'input_query' => 'example query 2',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'input_query' => 'example query 3',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
     }
 }

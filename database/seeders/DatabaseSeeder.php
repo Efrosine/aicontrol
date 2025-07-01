@@ -19,8 +19,12 @@ class DatabaseSeeder extends Seeder
             CctvDetectionResultSeeder::class,
             DummyAccountSeeder::class,
             ScrapedDataSeeder::class,
+            ScrapedResultSeeder::class,
             ScrapedDataResultSeeder::class,
+            SocialDetectionResultSeeder::class,
             SuspectedAccountSeeder::class,
+            SenderNumberSeeder::class,
+            BroadcastRecipientSeeder::class,
             // Add more seeders as needed
         ]);
     }

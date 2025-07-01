@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CctvWebhookController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -16,6 +17,6 @@ Route::prefix('webhooks/cctv')->group(function () {
 });
 
 Route::post('/upload', function (Request $request) {
-    \Log::info('Upload endpoint called', ['request' => $request->all()]);
+    Log::info('Upload endpoint called', ['request' => $request->all()]);
     return response()->json(['message' => 'Upload logged']);
 });
