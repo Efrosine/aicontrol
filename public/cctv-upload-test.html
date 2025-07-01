@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCTV Upload API Test Form</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            padding: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 CCTV Upload API Test Form</h1>
+        
+        <div class="note">
+            <strong>📋 Instructions:</strong><br>
+            1. Select a media file (jpg, jpeg, png, mp4, avi, mov) - max 100MB<br>
+            2. Enter camera name and detection type<br>
+            3. Optionally set timestamp (current time will be used if empty)<br>
+            4. Click Upload to test the API endpoint
+        </div>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="file">📁 Media File *</label>
+                <input type="file" id="file" name="file" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov" required>
+                <small style="color: #666;">Supported: jpg, jpeg, png, mp4, avi, mov (max 100MB)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="cctv_name">📹 Camera Name *</label>
+                <input type="text" id="cctv_name" name="cctv_name" placeholder="e.g., Camera 001" required>
+            </div>
+
+            <div class="form-group">
+                <label for="detection_type">🔍 Detection Type *</label>
+                <select id="detection_type" name="detection_type" required>
+                    <option value="">Select detection type...</option>
+                    <option value="person">Person</option>
+                    <option value="vehicle">Vehicle</option>
+                    <option value="motion">Motion</option>
+                    <option value="face">Face</option>
+                    <option value="package">Package</option>
+                    <option value="animal">Animal</option>
+                    <option value="object">Object</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="timestamp">⏰ Timestamp (Optional)</label>
+                <input type="datetime-local" id="timestamp" name="timestamp">
+                <small style="color: #666;">Leave empty to use current server time</small>
+            </div>
+
+            <button type="submit" id="submitBtn">🚀 Upload File</button>
+        </form>
+
+        <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_ENDPOINT = '/api/cctv/upload';
+        
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const responseDiv = document.getElementById('response');
+            const form = e.target;
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Uploading...';
+            responseDiv.style.display = 'block';
+            responseDiv.className = 'response info';
+            responseDiv.textContent = 'Uploading file to server...\n\nPlease wait...';
+            
+            try {
+                // Build form data
+                const formData = new FormData();
+                const fileInput = document.getElementById('file');
+                const cctvName = document.getElementById('cctv_name').value;
+                const detectionType = document.getElementById('detection_type').value;
+                const timestampInput = document.getElementById('timestamp').value;
+                
+                formData.append('file', fileInput.files[0]);
+                formData.append('cctv_name', cctvName);
+                formData.append('detection_type', detectionType);
+                
+                // Add timestamp if provided, otherwise let server use current time
+                if (timestampInput) {
+                    const timestamp = new Date(timestampInput).toISOString();
+                    formData.append('timestamp', timestamp);
+                }
+                
+                // Show request details
+                responseDiv.textContent = `📤 Uploading to: ${window.location.origin}${API_ENDPOINT}
+
+📋 Request Details:
+- File: ${fileInput.files[0].name} (${Math.round(fileInput.files[0].size / 1024)} KB)
+- Camera: ${cctvName}
+- Detection Type: ${detectionType}
+- Timestamp: ${timestampInput ? new Date(timestampInput).toISOString() : 'Server time'}
+
+⏳ Processing...`;
+                
+                // Make API request
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Display response
+                if (response.ok && result.success) {
+                    responseDiv.className = 'response success';
+                    responseDiv.textContent = `✅ Upload Successful!
+
+📊 Response Details:
+HTTP Status: ${response.status} ${response.statusText}
+
+📁 File Information:
+- Storage Path: ${result.data.storage_path}
+- Original Filename: ${result.data.original_filename}
+- File Size: ${result.data.file_size}
+- Upload Time: ${result.data.timestamp}
+
+📹 Camera Information:
+- Camera Name: ${result.data.cctv_name}
+- Detection Type: ${result.data.detection_type}
+
+💡 The file has been stored in MinIO and should now be visible in the Detection Archive.`;
+                } else {
+                    responseDiv.className = 'response error';
+                    let errorText = `❌ Upload Failed!
+
+📊 Response Details:
+HTTP Status: ${response.status} ${response.statusText}
+Message: ${result.message || 'Unknown error'}`;
+
+                    if (result.errors) {
+                        errorText += '\n\n📋 Validation Errors:';
+                        for (const [field, messages] of Object.entries(result.errors)) {
+                            errorText += `\n- ${field}: ${messages.join(', ')}`;
+                        }
+                    }
+                    
+                    responseDiv.textContent = errorText;
+                }
+                
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.textContent = `❌ Network Error!
+
+🚫 Error Details:
+${error.message}
+
+💡 Possible causes:
+- Laravel server is not running
+- Network connectivity issues
+- CORS configuration problems
+
+🔧 Solutions:
+- Start Laravel: php artisan serve
+- Check server logs for errors
+- Verify MinIO is running`;
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Upload File';
+            }
+        });
+        
+        // Auto-generate timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            // Set to current local time
+            const timestampInput = document.getElementById('timestamp');
+            const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            timestampInput.value = localDateTime;
+        });
+        
+        // File validation
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 100 * 1024 * 1024; // 100MB
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'video/mp4', 'video/avi', 'video/quicktime'];
+                
+                if (file.size > maxSize) {
+                    alert('File is too large! Maximum size is 100MB.');
+                    e.target.value = '';
+                    return;
+                }
+                
+                if (!allowedTypes.includes(file.type)) {
+                    alert('File type not supported! Please use: jpg, jpeg, png, mp4, avi, mov');
+                    e.target.value = '';
+                    return;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

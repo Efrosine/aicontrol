@@ -15,7 +15,5 @@ Route::prefix('webhooks/cctv')->group(function () {
     Route::post('detection-event', [CctvWebhookController::class, 'detectionEvent']);
 });
 
-Route::post('/upload', function (Request $request) {
-    \Log::info('Upload endpoint called', ['request' => $request->all()]);
-    return response()->json(['message' => 'Upload logged']);
-});
+// Public CCTV file upload endpoint (no authentication required)
+Route::post('/cctv/upload', [App\Http\Controllers\CctvUploadController::class, 'upload']);
