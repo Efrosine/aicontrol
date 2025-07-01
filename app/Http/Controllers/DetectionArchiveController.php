@@ -131,6 +131,7 @@ class DetectionArchiveController extends Controller
             Log::info('DetectionArchive: Skipping CCTV service call for testing');
             return collect();
             
+            /* Commented out to avoid unreachable code issue - uncomment when needed
             $cameras = $this->cctvService->getAllCameras();
             if (!$cameras) {
                 return collect();
@@ -142,6 +143,7 @@ class DetectionArchiveController extends Controller
                     'name' => $camera['name']
                 ];
             });
+            */
         } catch (\Exception $e) {
             Log::error('Failed to fetch cameras from service: ' . $e->getMessage());
             return collect();
@@ -157,16 +159,16 @@ class DetectionArchiveController extends Controller
             $files = [];
             $bucket = config('storage.minio.bucket', 'detection-archive');
             
-<<<<<<< HEAD
             // Debug logging
             Log::info('DetectionArchive: Starting file retrieval', [
                 'camera_filter' => $cameraFilter,
                 'date' => $date,
                 'detection_type' => $detectionType,
-                'time_range' => $timeRange
+                'time_range' => $timeRange,
+                'show_all_dates' => $showAllDates
             ]);
             
-            // Parse date for path structure
+            // Parse date for path structure (for specific date searches)
             $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
             if (!$dateObj) {
                 Log::error('DetectionArchive: Invalid date format', ['date' => $date]);
@@ -183,8 +185,6 @@ class DetectionArchiveController extends Controller
                 'day' => $day
             ]);
             
-=======
->>>>>>> tololnest
             // Get known cameras from service for name mapping
             $knownCameras = $this->getCamerasFromService();
             $cameraMap = [];
@@ -192,90 +192,19 @@ class DetectionArchiveController extends Controller
                 $cameraMap[$camera->id] = $camera->name;
             }
             
-<<<<<<< HEAD
             Log::info('DetectionArchive: Known cameras', [
                 'count' => count($knownCameras),
                 'camera_map' => $cameraMap
             ]);
             
-            if ($cameraFilter && $cameraFilter !== 'all') {
-                // Specific camera filter - check only that camera
-                $cameraIds = [$cameraFilter];
-                Log::info('DetectionArchive: Using specific camera filter', ['camera_ids' => $cameraIds]);
-            } else {
-                // "Show All Cameras" - discover all camera folders in MinIO
-                $cameraIds = $this->discoverAllCameraIds($year, $month, $day);
-                Log::info('DetectionArchive: Discovered cameras from MinIO', ['camera_ids' => $cameraIds]);
-            }
-            
-            foreach ($cameraIds as $cameraId) {
-                $basePath = "{$cameraId}/{$year}/{$month}/{$day}/";
-                
-                Log::info('DetectionArchive: Processing camera', [
-                    'camera_id' => $cameraId,
-                    'base_path' => $basePath
-                ]);
-                
-                // Determine camera info
-                $cameraInfo = (object) [
-                    'id' => $cameraId,
-                    'name' => $cameraMap[$cameraId] ?? null,
-                    'is_identified' => isset($cameraMap[$cameraId])
-                ];
-                
-                // Get detection types (folders) for this camera/date
-                $detectionTypes = $this->getDetectionTypesForPath($basePath);
-                
-                Log::info('DetectionArchive: Found detection types', [
-                    'camera_id' => $cameraId,
-                    'detection_types' => $detectionTypes
-                ]);
-                
-                foreach ($detectionTypes as $detectionTypeFolder) {
-                    // Skip if detection type filter is applied and doesn't match
-                    if ($detectionType && $detectionType !== 'all' && $detectionTypeFolder !== $detectionType) {
-                        Log::info('DetectionArchive: Skipping detection type due to filter', [
-                            'detection_type_folder' => $detectionTypeFolder,
-                            'filter' => $detectionType
-                        ]);
-                        continue;
-                    }
-                    
-                    $detectionPath = $basePath . $detectionTypeFolder . '/';
-                    $filesInPath = $this->getFilesFromMinIOPath($detectionPath);
-                    
-                    Log::info('DetectionArchive: Found files in path', [
-                        'detection_path' => $detectionPath,
-                        'file_count' => count($filesInPath),
-                        'files' => $filesInPath
-                    ]);
-                    
-                    foreach ($filesInPath as $file) {
-                        $fileInfo = $this->parseFileInfo($file, $cameraInfo, $detectionTypeFolder, $date);
-                        
-                        // Apply time range filter
-                        if ($this->matchesTimeRange($fileInfo, $timeRange)) {
-                            $files[] = $fileInfo;
-                            Log::info('DetectionArchive: Added file to results', [
-                                'file' => $fileInfo['filename'],
-                                'camera' => $fileInfo['camera_name']
-                            ]);
-                        } else {
-                            Log::info('DetectionArchive: File filtered out by time range', [
-                                'file' => $fileInfo['filename'],
-                                'time_range' => $timeRange
-                            ]);
-                        }
-                    }
-                }
-=======
             if ($showAllDates) {
                 // Show All Dates: Discover all files across all dates
                 $files = $this->getAllFilesFromAllDates($cameraFilter, $detectionType, $timeRange, $cameraMap);
+                Log::info('DetectionArchive: Using show all dates mode');
             } else {
                 // Specific date: Use original logic
                 $files = $this->getFilesFromSpecificDate($cameraFilter, $date, $detectionType, $timeRange, $cameraMap);
->>>>>>> tololnest
+                Log::info('DetectionArchive: Using specific date mode');
             }
             
             // Sort by timestamp descending
