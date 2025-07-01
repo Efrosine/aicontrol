@@ -45,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('cctvs/{id}/stream', [CctvController::class, 'stream'])->name('cctvs.stream');
         Route::get('cctvs/{id}/status', [CctvController::class, 'status'])->name('cctvs.status');
         Route::put('cctvs/detection-config', [CctvController::class, 'updateDetectionConfig'])->name('cctvs.detection.update');
-        
+
         // CCTV Settings routes
         Route::get('settings/cctv', [CctvSettingsController::class, 'index'])->name('settings.cctv.index');
         Route::put('settings/cctv', [CctvSettingsController::class, 'update'])->name('settings.cctv.update');
@@ -66,24 +66,38 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/security-alerts', function () {
             return view('admin.security-alerts');
         })->name('admin.security.alerts');
-        
+
         Route::get('admin/zone-management', function () {
             return view('admin.zone-management');
         })->name('admin.security.zones');
-        
+
         Route::get('admin/detection-archive', [DetectionArchiveController::class, 'index'])->name('admin.security.detection-archive');
         Route::get('admin/detection-archive/preview', [DetectionArchiveController::class, 'preview'])->name('admin.security.detection-archive.preview');
         Route::get('admin/detection-archive/download', [DetectionArchiveController::class, 'download'])->name('admin.security.detection-archive.download');
-        
+
         // Storage Settings routes
         Route::get('admin/storage-settings', [StorageSettingsController::class, 'index'])->name('admin.storage.settings.index');
         Route::put('admin/storage-settings', [StorageSettingsController::class, 'updateSettings'])->name('admin.storage.settings.update');
         Route::post('admin/storage-settings/test', [StorageSettingsController::class, 'testConnection'])->name('admin.storage.settings.test');
-        
+
         Route::get('admin/notifications', function () {
             return view('admin.notifications');
         })->name('admin.notifications');
 
+        // WhatsApp Broadcast routes
+        Route::prefix('broadcast')->group(function () {
+            // Sender Number routes
+            Route::resource('sender-numbers', App\Http\Controllers\SenderNumberController::class);
+
+            // Broadcast Recipient routes
+            Route::resource('broadcast-recipients', App\Http\Controllers\BroadcastRecipientController::class);
+
+            // Broadcast sending
+            Route::get('/send', [App\Http\Controllers\BroadcastController::class, 'showSendForm'])->name('broadcast.send');
+            Route::post('/send', [App\Http\Controllers\BroadcastController::class, 'send'])->name('broadcast.send.post');
+            Route::post('/get-detection-results', [App\Http\Controllers\BroadcastController::class, 'getDetectionResults'])
+                ->name('broadcast.get-detection-results');
+        });
     });
 
     // Home route for regular users
