@@ -7,7 +7,12 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 mb-2">Detection Archive</h1>
-                <p class="text-gray-600">Browse and manage recorded detection files from security cameras</p>
+                <p class="text-gray-600">
+                    Browse and manage recorded detection files from security cameras
+                    @if(isset($showAllDates) && $showAllDates)
+                        <span class="badge badge-info badge-sm ml-2">Showing All Dates</span>
+                    @endif
+                </p>
                 <p class="text-sm text-gray-500 mt-1">
                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -29,7 +34,12 @@
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                <div class="badge badge-info">{{ count($detectionFiles) }} files found</div>
+                <div class="badge badge-info">
+                    {{ count($detectionFiles) }} files found
+                    @if(isset($showAllDates) && $showAllDates)
+                        <span class="ml-1 text-xs opacity-75">(all dates)</span>
+                    @endif
+                </div>
                 <a href="{{ route('admin.storage.settings.index') }}" class="btn btn-outline btn-sm">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -71,7 +81,16 @@
                 <label class="label">
                     <span class="label-text font-medium">Date</span>
                 </label>
-                <input type="date" name="date" value="{{ $selectedDate }}" class="input input-bordered w-full" onchange="this.form.submit()">
+                <div class="flex flex-col gap-2">
+                    <select name="date_filter_type" class="select select-bordered w-full" onchange="handleDateFilterChange(this)">
+                        <option value="specific" {{ (!isset($showAllDates) || !$showAllDates) ? 'selected' : '' }}>Specific Date</option>
+                        <option value="all" {{ (isset($showAllDates) && $showAllDates) ? 'selected' : '' }}>Show All Dates</option>
+                    </select>
+                    <div id="specificDateInput" class="{{ (isset($showAllDates) && $showAllDates) ? 'hidden' : '' }}">
+                        <input type="date" name="date" value="{{ $selectedDate }}" class="input input-bordered w-full" onchange="this.form.submit()">
+                    </div>
+                    <input type="hidden" name="show_all_dates" value="{{ (isset($showAllDates) && $showAllDates) ? '1' : '0' }}">
+                </div>
             </div>
 
             <!-- Detection Type Filter -->
@@ -367,6 +386,26 @@ function downloadCurrentFile() {
 function refreshArchive() {
     location.reload();
 }
+
+function handleDateFilterChange(selectElement) {
+    const form = selectElement.closest('form');
+    const specificDateInput = document.getElementById('specificDateInput');
+    const showAllDatesInput = document.querySelector('input[name="show_all_dates"]');
+    
+    if (selectElement.value === 'all') {
+        // Show All Dates selected
+        specificDateInput.classList.add('hidden');
+        showAllDatesInput.value = '1';
+    } else {
+        // Specific Date selected
+        specificDateInput.classList.remove('hidden');
+        showAllDatesInput.value = '0';
+    }
+    
+    form.submit();
+}
+
+
 
 function showToast(type, message) {
     const toast = document.createElement('div');
