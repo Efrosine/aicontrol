@@ -31,6 +31,7 @@ class DetectionArchiveController extends Controller
         $selectedDate = $request->get('date', date('Y-m-d'));
         $selectedDetectionType = $request->get('detection_type');
         $selectedTimeRange = $request->get('time_range');
+        $showAllDates = $request->get('show_all_dates') === '1';
         
         Log::info('DetectionArchive: Request parameters', [
             'camera' => $selectedCamera,
@@ -45,11 +46,12 @@ class DetectionArchiveController extends Controller
             $selectedCamera, 
             $selectedDate, 
             $selectedDetectionType, 
-            $selectedTimeRange
+            $selectedTimeRange,
+            $showAllDates
         );
         
         // Build comprehensive camera list for dropdown
-        $cameras = $this->buildCameraDropdownList($knownCameras, $selectedDate);
+        $cameras = $this->buildCameraDropdownList($knownCameras, $selectedDate, $showAllDates);
         
         // Get storage status
         $storageController = new StorageSettingsController();
@@ -63,6 +65,7 @@ class DetectionArchiveController extends Controller
             'selectedDate', 
             'selectedDetectionType',
             'selectedTimeRange',
+            'showAllDates',
             'storageStatus'
         ));
     }
@@ -70,7 +73,7 @@ class DetectionArchiveController extends Controller
     /**
      * Build camera dropdown list including discovered cameras from MinIO
      */
-    private function buildCameraDropdownList($knownCameras, $selectedDate)
+    private function buildCameraDropdownList($knownCameras, $selectedDate, $showAllDates = false)
     {
         $cameraList = collect();
         
@@ -84,13 +87,19 @@ class DetectionArchiveController extends Controller
             ]);
         }
         
-        // Discover cameras from MinIO for the selected date
-        $dateObj = \DateTime::createFromFormat('Y-m-d', $selectedDate);
-        $year = $dateObj->format('Y');
-        $month = $dateObj->format('m');
-        $day = $dateObj->format('d');
+        if ($showAllDates) {
+            // Discover cameras from all dates
+            $discoveredCameraIds = $this->discoverAllCameraIdsGlobal();
+        } else {
+            // Discover cameras from MinIO for the selected date
+            $dateObj = \DateTime::createFromFormat('Y-m-d', $selectedDate);
+            $year = $dateObj->format('Y');
+            $month = $dateObj->format('m');
+            $day = $dateObj->format('d');
+            
+            $discoveredCameraIds = $this->discoverAllCameraIds($year, $month, $day);
+        }
         
-        $discoveredCameraIds = $this->discoverAllCameraIds($year, $month, $day);
         $knownCameraIds = $knownCameras->pluck('id')->toArray();
         
         // Add unidentified cameras found in MinIO
@@ -142,12 +151,13 @@ class DetectionArchiveController extends Controller
     /**
      * Get detection files from MinIO based on filters
      */
-    private function getDetectionFilesFromMinIO($cameraFilter, $date, $detectionType, $timeRange)
+    private function getDetectionFilesFromMinIO($cameraFilter, $date, $detectionType, $timeRange, $showAllDates = false)
     {
         try {
             $files = [];
             $bucket = config('storage.minio.bucket', 'detection-archive');
             
+<<<<<<< HEAD
             // Debug logging
             Log::info('DetectionArchive: Starting file retrieval', [
                 'camera_filter' => $cameraFilter,
@@ -173,6 +183,8 @@ class DetectionArchiveController extends Controller
                 'day' => $day
             ]);
             
+=======
+>>>>>>> tololnest
             // Get known cameras from service for name mapping
             $knownCameras = $this->getCamerasFromService();
             $cameraMap = [];
@@ -180,6 +192,7 @@ class DetectionArchiveController extends Controller
                 $cameraMap[$camera->id] = $camera->name;
             }
             
+<<<<<<< HEAD
             Log::info('DetectionArchive: Known cameras', [
                 'count' => count($knownCameras),
                 'camera_map' => $cameraMap
@@ -255,6 +268,14 @@ class DetectionArchiveController extends Controller
                         }
                     }
                 }
+=======
+            if ($showAllDates) {
+                // Show All Dates: Discover all files across all dates
+                $files = $this->getAllFilesFromAllDates($cameraFilter, $detectionType, $timeRange, $cameraMap);
+            } else {
+                // Specific date: Use original logic
+                $files = $this->getFilesFromSpecificDate($cameraFilter, $date, $detectionType, $timeRange, $cameraMap);
+>>>>>>> tololnest
             }
             
             // Sort by timestamp descending
@@ -272,6 +293,162 @@ class DetectionArchiveController extends Controller
             Log::error('Failed to fetch files from MinIO: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
+            return [];
+        }
+    }
+    
+    /**
+     * Get files from all available dates
+     */
+    private function getAllFilesFromAllDates($cameraFilter, $detectionType, $timeRange, $cameraMap)
+    {
+        $files = [];
+        $bucket = config('storage.minio.bucket', 'detection-archive');
+        $client = $this->getMinIOClient();
+        
+        // Get all camera IDs first
+        if ($cameraFilter && $cameraFilter !== 'all') {
+            $cameraIds = [$cameraFilter];
+        } else {
+            $cameraIds = $this->discoverAllCameraIdsGlobal();
+        }
+        
+        foreach ($cameraIds as $cameraId) {
+            // List all objects under this camera to find all dates
+            $result = $client->listObjectsV2([
+                'Bucket' => $bucket,
+                'Prefix' => $cameraId . '/',
+                'MaxKeys' => 1000
+            ]);
+            
+            if (isset($result['Contents'])) {
+                foreach ($result['Contents'] as $object) {
+                    $objectKey = $object['Key'];
+                    
+                    // Skip directories (keys ending with '/')
+                    if (str_ends_with($objectKey, '/')) {
+                        continue;
+                    }
+                    
+                    // Parse the file path to extract detection type and date
+                    $pathParts = explode('/', $objectKey);
+                    if (count($pathParts) >= 5) {
+                        // Format: camera_id/year/month/day/detection_type/filename
+                        $detectionTypeFolder = $pathParts[4];
+                        $fileDate = $pathParts[1] . '-' . $pathParts[2] . '-' . $pathParts[3];
+                        
+                        // Apply detection type filter
+                        if ($detectionType && $detectionType !== 'all' && $detectionTypeFolder !== $detectionType) {
+                            continue;
+                        }
+                        
+                        // Determine camera info
+                        $cameraInfo = (object) [
+                            'id' => $cameraId,
+                            'name' => $cameraMap[$cameraId] ?? null,
+                            'is_identified' => isset($cameraMap[$cameraId])
+                        ];
+                        
+                        // Parse file info
+                        $fileInfo = $this->parseFileInfo($objectKey, $cameraInfo, $detectionTypeFolder, $fileDate);
+                        
+                        // Apply time range filter
+                        if ($this->matchesTimeRange($fileInfo, $timeRange)) {
+                            $files[] = $fileInfo;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return $files;
+    }
+    
+    /**
+     * Get files from a specific date (original logic)
+     */
+    private function getFilesFromSpecificDate($cameraFilter, $date, $detectionType, $timeRange, $cameraMap)
+    {
+        $files = [];
+        
+        // Parse date for path structure
+        $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+        $year = $dateObj->format('Y');
+        $month = $dateObj->format('m');
+        $day = $dateObj->format('d');
+        
+        if ($cameraFilter && $cameraFilter !== 'all') {
+            // Specific camera filter - check only that camera
+            $cameraIds = [$cameraFilter];
+        } else {
+            // "Show All Cameras" - discover all camera folders in MinIO
+            $cameraIds = $this->discoverAllCameraIds($year, $month, $day);
+        }
+        
+        foreach ($cameraIds as $cameraId) {
+            $basePath = "{$cameraId}/{$year}/{$month}/{$day}/";
+            
+            // Determine camera info
+            $cameraInfo = (object) [
+                'id' => $cameraId,
+                'name' => $cameraMap[$cameraId] ?? null,
+                'is_identified' => isset($cameraMap[$cameraId])
+            ];
+            
+            // Get detection types (folders) for this camera/date
+            $detectionTypes = $this->getDetectionTypesForPath($basePath);
+            
+            foreach ($detectionTypes as $detectionTypeFolder) {
+                // Skip if detection type filter is applied and doesn't match
+                if ($detectionType && $detectionType !== 'all' && $detectionTypeFolder !== $detectionType) {
+                    continue;
+                }
+                
+                $detectionPath = $basePath . $detectionTypeFolder . '/';
+                $filesInPath = $this->getFilesFromMinIOPath($detectionPath);
+                
+                foreach ($filesInPath as $file) {
+                    $fileInfo = $this->parseFileInfo($file, $cameraInfo, $detectionTypeFolder, $date);
+                    
+                    // Apply time range filter
+                    if ($this->matchesTimeRange($fileInfo, $timeRange)) {
+                        $files[] = $fileInfo;
+                    }
+                }
+            }
+        }
+        
+        return $files;
+    }
+    
+    /**
+     * Discover all camera IDs globally (across all dates)
+     */
+    private function discoverAllCameraIdsGlobal()
+    {
+        try {
+            $bucket = config('storage.minio.bucket', 'detection-archive');
+            $client = $this->getMinIOClient();
+            $cameraIds = [];
+            
+            // List all top-level "folders" (camera IDs)
+            $result = $client->listObjectsV2([
+                'Bucket' => $bucket,
+                'Delimiter' => '/',
+                'MaxKeys' => 1000
+            ]);
+            
+            if (isset($result['CommonPrefixes'])) {
+                foreach ($result['CommonPrefixes'] as $prefix) {
+                    $cameraId = rtrim($prefix['Prefix'], '/');
+                    $cameraIds[] = $cameraId;
+                }
+            }
+            
+            return $cameraIds;
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to discover camera IDs globally: ' . $e->getMessage());
             return [];
         }
     }
