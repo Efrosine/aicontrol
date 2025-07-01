@@ -28,8 +28,7 @@
 
                 <div class="mb-4">
                     <label for="sender_id" class="block text-sm font-medium text-gray-700 mb-1">Sender Account</label>
-                    <select name="sender_id" id="sender_id"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <select name="sender_id" id="sender_id" class="select select-bordered w-full">
                         <option value="">Select a sender</option>
                         @foreach($senders as $sender)
                             <option value="{{ $sender->id }}" {{ old('sender_id') == $sender->id ? 'selected' : '' }}>
@@ -38,14 +37,13 @@
                         @endforeach
                     </select>
                     @error('sender_id')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        <p class="text-error text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-4">
                     <label for="data_type" class="block text-sm font-medium text-gray-700 mb-1">Data Type</label>
-                    <select name="data_type" id="data_type"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <select name="data_type" id="data_type" class="select select-bordered w-full">
                         <option value="">Select data type</option>
                         @foreach($dataTypes as $value => $label)
                             <option value="{{ $value }}" {{ old('data_type') == $value ? 'selected' : '' }}>
@@ -54,33 +52,30 @@
                         @endforeach
                     </select>
                     @error('data_type')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        <p class="text-error text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-4" id="results-container" style="display: none;">
                     <label for="result_id" class="block text-sm font-medium text-gray-700 mb-1">Select Detection
                         Result</label>
-                    <select name="result_id" id="result_id"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <select name="result_id" id="result_id" class="select select-bordered w-full">
                         <option value="">Select a detection result</option>
                     </select>
                     <div id="loading-results" class="mt-2 text-gray-600 text-sm flex items-center" style="display: none;">
-                        <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none"
-                            viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
+                        <span class="loading loading-spinner loading-sm mr-2"></span>
                         Loading results...
                     </div>
-                    <div id="no-results" class="mt-2 text-red-600 text-sm" style="display: none;">
-                        No detection results available for this data type.
+                    <div id="no-results" class="alert alert-error mt-2 py-2 text-sm" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-4 w-4" fill="none"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>No detection results available for this data type.</span>
                     </div>
                     @error('result_id')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        <p class="text-error text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -95,28 +90,13 @@
                     </div>
                 </div>
 
-                <div class="mb-4 border-t pt-4 mt-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-medium text-gray-700">Debug Info</h3>
-                        <button type="button" id="toggleDebug" class="text-xs text-blue-500">Show Debug Info</button>
-                    </div>
-                    <div id="debugInfo" class="mt-2 p-3 bg-gray-50 rounded text-sm font-mono hidden">
-                        No debug info available
-                    </div>
-                </div>
 
                 <div class="flex items-center justify-between mt-6">
                     <div class="flex space-x-2">
-                        <a href="{{ route('dashboard') }}" class="text-blue-500 hover:text-blue-700">
-                            Back to Dashboard
-                        </a>
-                        <button type="button" id="testDataButton"
-                            class="text-gray-500 hover:text-gray-700 text-sm underline">
-                            Test Data
-                        </button>
+                        <a href="{{ route('dashboard') }}" class="btn btn-ghost">
+                            Back to Dashboard</a>
                     </div>
-                    <button type="submit" id="submitButton"
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" disabled>
+                    <button type="submit" id="submitButton" class="btn btn-primary">
                         Send Broadcast
                     </button>
                 </div>
@@ -155,12 +135,12 @@
                 // Show loading state
                 const submitButton = document.getElementById('submitButton');
                 submitButton.innerHTML = `
-                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Sending...
-                                `;
+                                                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                </svg>
+                                                                Sending...
+                                                            `;
                 submitButton.disabled = true;
 
                 // Add a class to show that we're submitting
@@ -180,14 +160,6 @@
                     } else {
                         console.log(`[${timestamp}] ${message}`);
                     }
-
-                    // Update debug info if visible
-                    const debugInfo = document.getElementById('debugInfo');
-                    if (debugInfo && !debugInfo.classList.contains('hidden')) {
-                        const newMessage = document.createElement('div');
-                        newMessage.innerHTML = `<p class="text-xs">[${timestamp}] ${message}</p>`;
-                        debugInfo.prepend(newMessage);
-                    }
                 }
 
                 // DOM elements
@@ -196,7 +168,6 @@
                 const resultSelect = document.getElementById('result_id');
                 const submitButton = document.getElementById('submitButton');
                 const senderSelect = document.getElementById('sender_id');
-                const testDataButton = document.getElementById('testDataButton');
                 const form = document.getElementById('broadcastForm');
 
                 // Disable submit button initially
@@ -221,100 +192,44 @@
 
                 // Add event listeners to form controls
                 senderSelect.addEventListener('change', checkFormValidity);
+
+                // Handle toggle preview button
+                const togglePreviewBtn = document.getElementById('togglePreview');
+                const messagePreview = document.getElementById('messagePreview');
+
+                togglePreviewBtn.addEventListener('click', function () {
+                    if (messagePreview.classList.contains('hidden')) {
+                        messagePreview.classList.remove('hidden');
+                        togglePreviewBtn.textContent = 'Hide Preview';
+
+                        // Update preview content
+                        updatePreviewContent();
+                    } else {
+                        messagePreview.classList.add('hidden');
+                        togglePreviewBtn.textContent = 'Show Preview';
+                    }
+                });
+
+                // Function to update the preview content
+                function updatePreviewContent() {
+                    if (!resultSelect.value) {
+                        messagePreview.textContent = 'Select a result to see preview';
+                    } else {
+                        const dataType = dataTypeSelect.value;
+                        const selectedOption = resultSelect.options[resultSelect.selectedIndex];
+                        const previewText = `AIControl Alert\n\n${dataType === 'cctv' ? '*CCTV Detection Alert*' : '*Social Media Alert*'}\nTime: ${new Date().toLocaleString()}\n${selectedOption.textContent}\n\nRecipients will be notified based on their preferences.`;
+                        messagePreview.textContent = previewText;
+                    }
+                }
+
                 resultSelect.addEventListener('change', function () {
                     checkFormValidity();
 
                     // Update preview if it's visible
-                    const preview = document.getElementById('messagePreview');
-                    if (!preview.classList.contains('hidden')) {
-                        if (!resultSelect.value) {
-                            preview.textContent = 'Select a result to see preview';
-                        } else {
-                            const dataType = dataTypeSelect.value;
-                            const selectedOption = resultSelect.options[resultSelect.selectedIndex];
-                            const previewText = `AIControl Alert\n\n${dataType === 'cctv' ? '*CCTV Detection Alert*' : '*Social Media Alert*'}\nTime: ${new Date().toLocaleString()}\n${selectedOption.textContent}\n\nRecipients will be notified based on their preferences.`;
-                            preview.textContent = previewText;
-                        }
+                    if (!messagePreview.classList.contains('hidden')) {
+                        updatePreviewContent();
                     }
                 });
-
-                // Test data button
-                testDataButton.addEventListener('click', function () {
-                    debugLog('Test data button clicked');
-
-                    // Set a default sender if available
-                    if (senderSelect.options.length > 1) {
-                        senderSelect.selectedIndex = 1; // First non-empty option
-                        debugLog(`Selected sender: ${senderSelect.options[senderSelect.selectedIndex].text}`);
-                    } else {
-                        debugLog('No sender options available');
-                    }
-
-                    // Set data type to CCTV
-                    dataTypeSelect.value = 'cctv';
-                    debugLog('Set data type to CCTV');
-
-                    // Trigger the change event to load results
-                    debugLog('Triggering data type change event');
-                    const event = new Event('change');
-                    dataTypeSelect.dispatchEvent(event);
-
-                    // Notify the user
-                    setTimeout(() => {
-                        debugLog('Test data loaded');
-                        alert('Test data loaded. Select a detection result to enable the Send button.');
-                    }, 500);
-                });
-
-                // Debug info toggle
-                document.getElementById('toggleDebug').addEventListener('click', function () {
-                    const debugInfo = document.getElementById('debugInfo');
-                    const button = this;
-
-                    if (debugInfo.classList.contains('hidden')) {
-                        debugInfo.classList.remove('hidden');
-                        button.textContent = 'Hide Debug Info';
-
-                        // Update debug info
-                        const debugHtml = `
-                                            <p><strong>Sender:</strong> ${senderSelect.value}</p>
-                                            <p><strong>Data Type:</strong> ${dataTypeSelect.value}</p>
-                                            <p><strong>Result ID:</strong> ${resultSelect.value}</p>
-                                            <p><strong>CSRF Token:</strong> ${document.querySelector('input[name="csrf_token"]').value.substring(0, 10)}...</p>
-                                            <p><strong>Form Action:</strong> ${form.action}</p>
-                                            <p><strong>Browser:</strong> ${navigator.userAgent}</p>
-                                        `;
-                        debugInfo.innerHTML = debugHtml;
-                    } else {
-                        debugInfo.classList.add('hidden');
-                        button.textContent = 'Show Debug Info';
-                    }
-                });
-
-                // Preview toggle
-                document.getElementById('togglePreview').addEventListener('click', function () {
-                    const preview = document.getElementById('messagePreview');
-                    const button = this;
-
-                    if (preview.classList.contains('hidden')) {
-                        preview.classList.remove('hidden');
-                        button.textContent = 'Hide Preview';
-
-                        // Update preview content
-                        if (!resultSelect.value) {
-                            preview.textContent = 'Select a result to see preview';
-                        } else {
-                            const dataType = dataTypeSelect.value;
-                            const selectedOption = resultSelect.options[resultSelect.selectedIndex];
-                            const previewText = `AIControl Alert\n\n${dataType === 'cctv' ? '*CCTV Detection Alert*' : '*Social Media Alert*'}\nTime: ${new Date().toLocaleString()}\n${selectedOption.textContent}\n\nRecipients will be notified based on their preferences.`;
-                            preview.textContent = previewText;
-                        }
-                    } else {
-                        preview.classList.add('hidden');
-                        button.textContent = 'Show Preview';
-                    }
-                });
-
                 // Handle data type change
                 dataTypeSelect.addEventListener('change', function () {
                     const dataType = this.value;
@@ -334,106 +249,42 @@
                     document.getElementById('no-results').style.display = 'none';
                     resultSelect.innerHTML = '<option value="">Select a detection result</option>';
 
-                    // Get the test endpoint URL
-                    let testEndpoint;
-                    if (dataType === 'cctv') {
-                        testEndpoint = '{{ route("broadcast.test-results", ["type" => "cctv"]) }}';
-                    } else {
-                        testEndpoint = '{{ route("broadcast.test-results", ["type" => "social"]) }}';
-                    }
-
-                    console.log('Using test endpoint:', testEndpoint);
-
-                    // Fetch data from the test endpoint
-                    debugLog(`Fetching data from: ${testEndpoint}`);
-                    fetch(testEndpoint)
-                        .then(response => {
-                            debugLog(`Response status: ${response.status}`);
-                            if (!response.ok) {
-                                throw new Error(`Network response was not ok: ${response.status}`);
-                            }
-                            return response.json();
-                        })
+                    // Fetch detection results based on the selected data type
+                    fetch(`{{ route('broadcast.get-detection-results') }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('input[name="csrf_token"]').value
+                        },
+                        body: JSON.stringify({ data_type: dataType })
+                    })
+                        .then(response => response.json())
                         .then(data => {
-                            debugLog('Received data from endpoint', data);
-                            resultSelect.innerHTML = '<option value="">Select a detection result</option>';
+                            // Hide loading indicator
                             document.getElementById('loading-results').style.display = 'none';
 
                             if (data.results && data.results.length > 0) {
-                                debugLog(`Processing ${data.results.length} results`);
-
+                                // Populate dropdown with results
                                 data.results.forEach(result => {
                                     const option = document.createElement('option');
                                     option.value = result.id;
-
-                                    try {
-                                        // Format the option text based on data type
-                                        if (dataType === 'cctv') {
-                                            const date = new Date(result.created_at).toLocaleString();
-                                            // Parse the data if it's a string
-                                            let resultData = result.data;
-                                            if (typeof resultData === 'string') {
-                                                try {
-                                                    resultData = JSON.parse(resultData);
-                                                    debugLog('Parsed JSON data');
-                                                } catch (e) {
-                                                    debugLog('Failed to parse JSON data', e);
-                                                    resultData = {};
-                                                }
-                                            }
-
-                                            const detectionType = resultData?.detection_type || 'Unknown';
-                                            const confidence = resultData?.confidence || 0;
-                                            option.textContent = `${date} - ${detectionType} (${Math.round(confidence * 100)}%)`;
-
-                                        } else {
-                                            const date = new Date(result.created_at).toLocaleString();
-                                            // Parse the data if it's a string
-                                            let resultData = result.data;
-                                            if (typeof resultData === 'string') {
-                                                try {
-                                                    resultData = JSON.parse(resultData);
-                                                    debugLog('Parsed JSON data');
-                                                } catch (e) {
-                                                    debugLog('Failed to parse JSON data', e);
-                                                    resultData = {};
-                                                }
-                                            }
-
-                                            const platform = resultData?.platform || 'Unknown';
-                                            const accountName = resultData?.account_name || 'Unknown';
-                                            option.textContent = `${date} - ${platform}: ${accountName}`;
-                                        }
-
-                                        debugLog(`Created option: ${option.textContent}`);
-                                    } catch (e) {
-                                        debugLog('Error formatting option text', e);
-                                        option.textContent = `Result #${result.id} (error formatting)`;
-                                    }
-
+                                    option.textContent = result.summary || `Detection #${result.id} - ${result.created_at}`;
                                     resultSelect.appendChild(option);
                                 });
-
-                                document.getElementById('no-results').style.display = 'none';
-                                debugLog('All results processed and added to dropdown');
+                                debugLog(`Loaded ${data.results.length} results for ${dataType}`);
                             } else {
+                                // Show no results message
                                 document.getElementById('no-results').style.display = 'block';
-                                const option = document.createElement('option');
-                                option.value = "";
-                                option.textContent = "No detection results found";
-                                resultSelect.appendChild(option);
-                                debugLog('No results found');
+                                debugLog(`No results found for ${dataType}`);
                             }
 
                             checkFormValidity();
                         })
                         .catch(error => {
-                            debugLog('Error fetching results', error);
+                            console.error('Error fetching detection results:', error);
                             document.getElementById('loading-results').style.display = 'none';
                             document.getElementById('no-results').style.display = 'block';
                             document.getElementById('no-results').textContent = 'Error loading results. Please try again.';
-                            resultSelect.innerHTML = '<option value="">Error loading results</option>';
-                            checkFormValidity();
                         });
                 });
             });

@@ -48,14 +48,21 @@ class BroadcastService
         // Send message to each recipient
         $successCount = 0;
         $failedCount = 0;
+        $messageError = '';
 
         foreach ($recipients as $recipient) {
             $response = $this->sendWhatsAppMessage($sender, $recipient->phone_no, $messageContent);
 
+            \Log::info('WhatsApp broadcast response', [
+                'recipient' => $recipient->name,
+                'phone' => $recipient->phone_no,
+                'response' => $response,
+            ]);
             if ($response['success']) {
                 $successCount++;
             } else {
                 $failedCount++;
+                $messageError = $response['message'] ?? 'Unknown error';
                 Log::error('Failed to send WhatsApp broadcast', [
                     'recipient' => $recipient->name,
                     'phone' => $recipient->phone_no,
@@ -66,7 +73,7 @@ class BroadcastService
 
         return [
             'success' => true,
-            'message' => "Broadcast completed: {$successCount} successful, {$failedCount} failed",
+            'message' => "Broadcast completed: {$successCount} successful, {$failedCount} failed, " . ($messageError ?: 'No errors'),
             'successCount' => $successCount,
             'failedCount' => $failedCount,
         ];
@@ -197,7 +204,24 @@ class BroadcastService
                         'message' => $messageContent,
                     ]);
 
-            if ($response->successful()) {
+            \Log::notice('Watzap API response', [
+                'recipient' => $recipientPhone,
+                'sender' => $sender->number_key,
+                'response_code' => $response->status(),
+                'if successful' => $response->successful(),
+                'response' => $response->body(),
+            ]);
+
+            $responseData = $response->json();
+
+            if (
+                $response->successful() &&
+                !(
+                    isset($responseData['status'], $responseData['message']) &&
+                    $responseData['status'] === '1002' &&
+                    $responseData['message'] === 'Invalid Secret Key'
+                )
+            ) {
                 return [
                     'success' => true,
                     'message' => 'Message sent successfully',

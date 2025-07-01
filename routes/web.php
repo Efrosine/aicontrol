@@ -97,10 +97,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/send', [App\Http\Controllers\BroadcastController::class, 'send'])->name('broadcast.send.post');
             Route::post('/get-detection-results', [App\Http\Controllers\BroadcastController::class, 'getDetectionResults'])
                 ->name('broadcast.get-detection-results');
-
-            // Test route for checking detection results (temporary)
-            Route::get('/test-results/{type}', [App\Http\Controllers\BroadcastController::class, 'testDetectionResults'])
-                ->name('broadcast.test-results');
         });
     });
 
