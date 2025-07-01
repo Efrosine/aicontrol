@@ -15,7 +15,7 @@ return [
     'minio' => [
         'endpoint' => env('MINIO_ENDPOINT', 'localhost:9000'),
         'access_key' => env('MINIO_ACCESS_KEY', 'minioadmin'),
-        'secret_key' => env('MINIO_SECRET_KEY', 'minioadmin'),
+        'secret_key' => env('MINIO_SECRET_KEY', 'minioadmin123'),
         'region' => env('MINIO_REGION', 'us-east-1'),
         'bucket' => env('MINIO_BUCKET', 'detection-archive'),
         'use_ssl' => env('MINIO_USE_SSL', false),
