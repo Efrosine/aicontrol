@@ -24,7 +24,7 @@ class DetectionArchiveController extends Controller
     public function index(Request $request)
     {
         // Get cameras from external service
-        $cameras = $this->getCamerasFromService();
+        $knownCameras = $this->getCamerasFromService();
         
         // Get filters from request
         $selectedCamera = $request->get('camera');
@@ -40,6 +40,9 @@ class DetectionArchiveController extends Controller
             $selectedTimeRange
         );
         
+        // Build comprehensive camera list for dropdown
+        $cameras = $this->buildCameraDropdownList($knownCameras, $selectedDate);
+        
         // Get storage status
         $storageController = new StorageSettingsController();
         $storageData = $storageController->getSettings();
@@ -54,6 +57,51 @@ class DetectionArchiveController extends Controller
             'selectedTimeRange',
             'storageStatus'
         ));
+    }
+
+    /**
+     * Build camera dropdown list including discovered cameras from MinIO
+     */
+    private function buildCameraDropdownList($knownCameras, $selectedDate)
+    {
+        $cameraList = collect();
+        
+        // Add known cameras
+        foreach ($knownCameras as $camera) {
+            $cameraList->push((object) [
+                'id' => $camera->id,
+                'name' => $camera->name,
+                'is_identified' => true,
+                'sort_order' => 1 // Known cameras first
+            ]);
+        }
+        
+        // Discover cameras from MinIO for the selected date
+        $dateObj = \DateTime::createFromFormat('Y-m-d', $selectedDate);
+        $year = $dateObj->format('Y');
+        $month = $dateObj->format('m');
+        $day = $dateObj->format('d');
+        
+        $discoveredCameraIds = $this->discoverAllCameraIds($year, $month, $day);
+        $knownCameraIds = $knownCameras->pluck('id')->toArray();
+        
+        // Add unidentified cameras found in MinIO
+        foreach ($discoveredCameraIds as $cameraId) {
+            if (!in_array($cameraId, $knownCameraIds)) {
+                $cameraList->push((object) [
+                    'id' => $cameraId,
+                    'name' => "Unidentified ({$cameraId})",
+                    'is_identified' => false,
+                    'sort_order' => 2 // Unidentified cameras after known ones
+                ]);
+            }
+        }
+        
+        // Sort by identified status first, then by name
+        return $cameraList->sortBy([
+            ['sort_order', 'asc'],
+            ['name', 'asc']
+        ]);
     }
 
     /**
@@ -94,14 +142,30 @@ class DetectionArchiveController extends Controller
             $month = $dateObj->format('m');
             $day = $dateObj->format('d');
             
-            // Get all cameras or specific camera
-            $cameras = $this->getCamerasFromService();
-            if ($cameraFilter && $cameraFilter !== 'all') {
-                $cameras = $cameras->where('id', $cameraFilter);
+            // Get known cameras from service for name mapping
+            $knownCameras = $this->getCamerasFromService();
+            $cameraMap = [];
+            foreach ($knownCameras as $camera) {
+                $cameraMap[$camera->id] = $camera->name;
             }
             
-            foreach ($cameras as $camera) {
-                $basePath = "{$camera->id}/{$year}/{$month}/{$day}/";
+            if ($cameraFilter && $cameraFilter !== 'all') {
+                // Specific camera filter - check only that camera
+                $cameraIds = [$cameraFilter];
+            } else {
+                // "Show All Cameras" - discover all camera folders in MinIO
+                $cameraIds = $this->discoverAllCameraIds($year, $month, $day);
+            }
+            
+            foreach ($cameraIds as $cameraId) {
+                $basePath = "{$cameraId}/{$year}/{$month}/{$day}/";
+                
+                // Determine camera info
+                $cameraInfo = (object) [
+                    'id' => $cameraId,
+                    'name' => $cameraMap[$cameraId] ?? null,
+                    'is_identified' => isset($cameraMap[$cameraId])
+                ];
                 
                 // Get detection types (folders) for this camera/date
                 $detectionTypes = $this->getDetectionTypesForPath($basePath);
@@ -116,7 +180,7 @@ class DetectionArchiveController extends Controller
                     $filesInPath = $this->getFilesFromMinIOPath($detectionPath);
                     
                     foreach ($filesInPath as $file) {
-                        $fileInfo = $this->parseFileInfo($file, $camera, $detectionTypeFolder, $date);
+                        $fileInfo = $this->parseFileInfo($file, $cameraInfo, $detectionTypeFolder, $date);
                         
                         // Apply time range filter
                         if ($this->matchesTimeRange($fileInfo, $timeRange)) {
@@ -135,6 +199,57 @@ class DetectionArchiveController extends Controller
             
         } catch (\Exception $e) {
             Log::error('Failed to fetch files from MinIO: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Discover all camera IDs that have files for the given date
+     */
+    private function discoverAllCameraIds($year, $month, $day)
+    {
+        try {
+            $bucket = config('storage.minio.bucket', 'detection-archive');
+            $client = $this->getMinIOClient();
+            
+            // List all top-level "folders" (camera IDs) that have data for this date
+            $datePrefix = "{$year}/{$month}/{$day}/";
+            $cameraIds = [];
+            
+            // Use a broader search to find all camera folders
+            $result = $client->listObjectsV2([
+                'Bucket' => $bucket,
+                'Delimiter' => '/',
+                'MaxKeys' => 1000
+            ]);
+            
+            if (isset($result['CommonPrefixes'])) {
+                foreach ($result['CommonPrefixes'] as $prefix) {
+                    $cameraId = rtrim($prefix['Prefix'], '/');
+                    
+                    // Check if this camera has files for the target date
+                    $checkPath = "{$cameraId}/{$datePrefix}";
+                    try {
+                        $checkResult = $client->listObjectsV2([
+                            'Bucket' => $bucket,
+                            'Prefix' => $checkPath,
+                            'MaxKeys' => 1
+                        ]);
+                        
+                        if (isset($checkResult['Contents']) && count($checkResult['Contents']) > 0) {
+                            $cameraIds[] = $cameraId;
+                        }
+                    } catch (\Exception $e) {
+                        // Skip cameras that can't be checked
+                        continue;
+                    }
+                }
+            }
+            
+            return $cameraIds;
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to discover camera IDs: ' . $e->getMessage());
             return [];
         }
     }
@@ -210,7 +325,7 @@ class DetectionArchiveController extends Controller
     /**
      * Parse file information from MinIO object
      */
-    private function parseFileInfo($filePath, $camera, $detectionType, $date)
+    private function parseFileInfo($filePath, $cameraInfo, $detectionType, $date)
     {
         $pathParts = explode('/', $filePath);
         $filename = end($pathParts);
@@ -236,8 +351,9 @@ class DetectionArchiveController extends Controller
         
         return [
             'id' => md5($filePath),
-            'camera_id' => $camera->id,
-            'camera_name' => $camera->name,
+            'camera_id' => $cameraInfo->id,
+            'camera_name' => $cameraInfo->name ?? 'Unidentified',
+            'camera_is_identified' => $cameraInfo->is_identified,
             'filename' => $filename,
             'full_path' => $filePath,
             'type' => $type,

@@ -8,6 +8,12 @@
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 mb-2">Detection Archive</h1>
                 <p class="text-gray-600">Browse and manage recorded detection files from security cameras</p>
+                <p class="text-sm text-gray-500 mt-1">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Files from unregistered cameras are marked as "Unidentified" with a warning icon.
+                </p>
                 <!-- Storage Status Indicator -->
                 <div class="flex items-center mt-2">
                     <span class="text-sm text-gray-500 mr-2">Storage Status:</span>
@@ -52,8 +58,9 @@
                 <select name="camera" class="select select-bordered w-full" onchange="this.form.submit()">
                     <option value="all" {{ $selectedCamera == 'all' || !$selectedCamera ? 'selected' : '' }}>Show All Cameras</option>
                     @foreach($cameras as $camera)
-                        <option value="{{ $camera->id }}" {{ $selectedCamera == $camera->id ? 'selected' : '' }}>
-                            {{ $camera->name }}
+                        <option value="{{ $camera->id }}" {{ $selectedCamera == $camera->id ? 'selected' : '' }}
+                                @if(!$camera->is_identified) style="color: #d97706; font-style: italic;" @endif>
+                            @if(!$camera->is_identified)⚠ @endif{{ $camera->name }}
                         </option>
                     @endforeach
                 </select>
@@ -101,7 +108,24 @@
     <!-- Detection Files Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h3 class="text-lg font-semibold text-gray-900">Detection Files</h3>
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Detection Files</h3>
+                <div class="flex items-center space-x-4 text-sm">
+                    <div class="flex items-center">
+                        <div class="badge badge-outline badge-sm">Identified</div>
+                        <span class="text-gray-500 ml-1">- Registered camera</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="badge badge-warning badge-sm flex items-center gap-1">
+                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            Unidentified
+                        </div>
+                        <span class="text-gray-500 ml-1">- Unknown camera</span>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="overflow-x-auto">
@@ -138,7 +162,21 @@
                                 <div class="font-mono text-sm">{{ $file['filename'] }}</div>
                             </td>
                             <td>
-                                <div class="badge badge-outline">{{ $file['camera_name'] }}</div>
+                                @if(isset($file['camera_is_identified']) && !$file['camera_is_identified'])
+                                    <div class="flex items-center">
+                                        <div class="badge badge-warning flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                            </svg>
+                                            {{ $file['camera_name'] }}
+                                        </div>
+                                        <span class="text-xs text-yellow-600 ml-2" title="Camera ID: {{ $file['camera_id'] }}">
+                                            (ID: {{ $file['camera_id'] }})
+                                        </span>
+                                    </div>
+                                @else
+                                    <div class="badge badge-outline">{{ $file['camera_name'] }}</div>
+                                @endif
                             </td>
                             <td>
                                 <div class="badge badge-secondary">{{ $file['detection_type'] }}</div>
