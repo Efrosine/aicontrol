@@ -32,6 +32,14 @@ class DetectionArchiveController extends Controller
         $selectedDetectionType = $request->get('detection_type');
         $selectedTimeRange = $request->get('time_range');
         
+        Log::info('DetectionArchive: Request parameters', [
+            'camera' => $selectedCamera,
+            'date' => $selectedDate,
+            'detection_type' => $selectedDetectionType,
+            'time_range' => $selectedTimeRange,
+            'all_params' => $request->all()
+        ]);
+        
         // Get detection files from MinIO
         $detectionFiles = $this->getDetectionFilesFromMinIO(
             $selectedCamera, 
@@ -110,6 +118,10 @@ class DetectionArchiveController extends Controller
     private function getCamerasFromService()
     {
         try {
+            // Skip CCTV service for now to test MinIO functionality
+            Log::info('DetectionArchive: Skipping CCTV service call for testing');
+            return collect();
+            
             $cameras = $this->cctvService->getAllCameras();
             if (!$cameras) {
                 return collect();
@@ -136,11 +148,30 @@ class DetectionArchiveController extends Controller
             $files = [];
             $bucket = config('storage.minio.bucket', 'detection-archive');
             
+            // Debug logging
+            Log::info('DetectionArchive: Starting file retrieval', [
+                'camera_filter' => $cameraFilter,
+                'date' => $date,
+                'detection_type' => $detectionType,
+                'time_range' => $timeRange
+            ]);
+            
             // Parse date for path structure
             $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+            if (!$dateObj) {
+                Log::error('DetectionArchive: Invalid date format', ['date' => $date]);
+                return [];
+            }
+            
             $year = $dateObj->format('Y');
             $month = $dateObj->format('m');
             $day = $dateObj->format('d');
+            
+            Log::info('DetectionArchive: Parsed date', [
+                'year' => $year,
+                'month' => $month,
+                'day' => $day
+            ]);
             
             // Get known cameras from service for name mapping
             $knownCameras = $this->getCamerasFromService();
@@ -149,16 +180,28 @@ class DetectionArchiveController extends Controller
                 $cameraMap[$camera->id] = $camera->name;
             }
             
+            Log::info('DetectionArchive: Known cameras', [
+                'count' => count($knownCameras),
+                'camera_map' => $cameraMap
+            ]);
+            
             if ($cameraFilter && $cameraFilter !== 'all') {
                 // Specific camera filter - check only that camera
                 $cameraIds = [$cameraFilter];
+                Log::info('DetectionArchive: Using specific camera filter', ['camera_ids' => $cameraIds]);
             } else {
                 // "Show All Cameras" - discover all camera folders in MinIO
                 $cameraIds = $this->discoverAllCameraIds($year, $month, $day);
+                Log::info('DetectionArchive: Discovered cameras from MinIO', ['camera_ids' => $cameraIds]);
             }
             
             foreach ($cameraIds as $cameraId) {
                 $basePath = "{$cameraId}/{$year}/{$month}/{$day}/";
+                
+                Log::info('DetectionArchive: Processing camera', [
+                    'camera_id' => $cameraId,
+                    'base_path' => $basePath
+                ]);
                 
                 // Determine camera info
                 $cameraInfo = (object) [
@@ -170,14 +213,29 @@ class DetectionArchiveController extends Controller
                 // Get detection types (folders) for this camera/date
                 $detectionTypes = $this->getDetectionTypesForPath($basePath);
                 
+                Log::info('DetectionArchive: Found detection types', [
+                    'camera_id' => $cameraId,
+                    'detection_types' => $detectionTypes
+                ]);
+                
                 foreach ($detectionTypes as $detectionTypeFolder) {
                     // Skip if detection type filter is applied and doesn't match
                     if ($detectionType && $detectionType !== 'all' && $detectionTypeFolder !== $detectionType) {
+                        Log::info('DetectionArchive: Skipping detection type due to filter', [
+                            'detection_type_folder' => $detectionTypeFolder,
+                            'filter' => $detectionType
+                        ]);
                         continue;
                     }
                     
                     $detectionPath = $basePath . $detectionTypeFolder . '/';
                     $filesInPath = $this->getFilesFromMinIOPath($detectionPath);
+                    
+                    Log::info('DetectionArchive: Found files in path', [
+                        'detection_path' => $detectionPath,
+                        'file_count' => count($filesInPath),
+                        'files' => $filesInPath
+                    ]);
                     
                     foreach ($filesInPath as $file) {
                         $fileInfo = $this->parseFileInfo($file, $cameraInfo, $detectionTypeFolder, $date);
@@ -185,6 +243,15 @@ class DetectionArchiveController extends Controller
                         // Apply time range filter
                         if ($this->matchesTimeRange($fileInfo, $timeRange)) {
                             $files[] = $fileInfo;
+                            Log::info('DetectionArchive: Added file to results', [
+                                'file' => $fileInfo['filename'],
+                                'camera' => $fileInfo['camera_name']
+                            ]);
+                        } else {
+                            Log::info('DetectionArchive: File filtered out by time range', [
+                                'file' => $fileInfo['filename'],
+                                'time_range' => $timeRange
+                            ]);
                         }
                     }
                 }
@@ -195,10 +262,16 @@ class DetectionArchiveController extends Controller
                 return $b['timestamp'] - $a['timestamp'];
             });
             
+            Log::info('DetectionArchive: Final results', [
+                'total_files' => count($files)
+            ]);
+            
             return $files;
             
         } catch (\Exception $e) {
-            Log::error('Failed to fetch files from MinIO: ' . $e->getMessage());
+            Log::error('Failed to fetch files from MinIO: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
             return [];
         }
     }
@@ -216,6 +289,11 @@ class DetectionArchiveController extends Controller
             $datePrefix = "{$year}/{$month}/{$day}/";
             $cameraIds = [];
             
+            Log::info('DetectionArchive: Starting camera discovery', [
+                'bucket' => $bucket,
+                'date_prefix' => $datePrefix
+            ]);
+            
             // Use a broader search to find all camera folders
             $result = $client->listObjectsV2([
                 'Bucket' => $bucket,
@@ -223,28 +301,57 @@ class DetectionArchiveController extends Controller
                 'MaxKeys' => 1000
             ]);
             
+            Log::info('DetectionArchive: Top-level folder listing', [
+                'has_common_prefixes' => isset($result['CommonPrefixes']),
+                'prefix_count' => isset($result['CommonPrefixes']) ? count($result['CommonPrefixes']) : 0
+            ]);
+            
             if (isset($result['CommonPrefixes'])) {
                 foreach ($result['CommonPrefixes'] as $prefix) {
                     $cameraId = rtrim($prefix['Prefix'], '/');
                     
+                    Log::info('DetectionArchive: Checking camera folder', [
+                        'camera_id' => $cameraId,
+                        'prefix' => $prefix['Prefix']
+                    ]);
+                    
                     // Check if this camera has files for the target date
                     $checkPath = "{$cameraId}/{$datePrefix}";
                     try {
+                        Log::info('DetectionArchive: Checking path for files', [
+                            'check_path' => $checkPath
+                        ]);
+                        
                         $checkResult = $client->listObjectsV2([
                             'Bucket' => $bucket,
                             'Prefix' => $checkPath,
                             'MaxKeys' => 1
                         ]);
                         
-                        if (isset($checkResult['Contents']) && count($checkResult['Contents']) > 0) {
+                        $hasFiles = isset($checkResult['Contents']) && count($checkResult['Contents']) > 0;
+                        Log::info('DetectionArchive: File check result', [
+                            'camera_id' => $cameraId,
+                            'has_files' => $hasFiles,
+                            'file_count' => isset($checkResult['Contents']) ? count($checkResult['Contents']) : 0
+                        ]);
+                        
+                        if ($hasFiles) {
                             $cameraIds[] = $cameraId;
                         }
                     } catch (\Exception $e) {
+                        Log::error('DetectionArchive: Error checking camera path', [
+                            'camera_id' => $cameraId,
+                            'error' => $e->getMessage()
+                        ]);
                         // Skip cameras that can't be checked
                         continue;
                     }
                 }
             }
+            
+            Log::info('DetectionArchive: Camera discovery complete', [
+                'discovered_cameras' => $cameraIds
+            ]);
             
             return $cameraIds;
             
@@ -622,4 +729,5 @@ class DetectionArchiveController extends Controller
             return round($bytes / 1048576, 1) . ' MB';
         }
     }
+
 }

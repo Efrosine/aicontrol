@@ -75,6 +75,37 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/detection-archive/preview', [DetectionArchiveController::class, 'preview'])->name('admin.security.detection-archive.preview');
         Route::get('admin/detection-archive/download', [DetectionArchiveController::class, 'download'])->name('admin.security.detection-archive.download');
         
+        // Test route for debugging
+        Route::get('admin/test-detection-archive', function() {
+            $controller = new DetectionArchiveController(app(App\Services\CctvService::class));
+            $request = new \Illuminate\Http\Request([
+                'camera' => 'all',
+                'date' => '2025-06-23',
+                'detection_type' => 'all',
+                'time_range' => 'all'
+            ]);
+            
+            try {
+                $result = $controller->index($request);
+                $data = $result->getData();
+                
+                return response()->json([
+                    'success' => true,
+                    'cameras_count' => $data['cameras']->count(),
+                    'cameras' => $data['cameras']->toArray(),
+                    'files_count' => count($data['detectionFiles']),
+                    'files' => $data['detectionFiles'],
+                    'selectedDate' => $data['selectedDate']
+                ]);
+            } catch (Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        });
+        
         // Storage Settings routes
         Route::get('admin/storage-settings', [StorageSettingsController::class, 'index'])->name('admin.storage.settings.index');
         Route::put('admin/storage-settings', [StorageSettingsController::class, 'updateSettings'])->name('admin.storage.settings.update');
