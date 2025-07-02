@@ -13,7 +13,7 @@ return [
     */
 
     'service' => [
-        'base_url' => env('CCTV_SERVICE_BASE_URL', 'http://192.168.8.109:8000'),
+        'base_url' => env('CCTV_SERVICE_BASE_URL', 'http://cctv-service:8000'),
         'timeout' => env('CCTV_SERVICE_TIMEOUT', 30),
         'retry_attempts' => env('CCTV_SERVICE_RETRY_ATTEMPTS', 3),
         'connect_timeout' => env('CCTV_SERVICE_CONNECT_TIMEOUT', 10),
