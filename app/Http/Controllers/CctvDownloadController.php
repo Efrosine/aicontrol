@@ -122,11 +122,16 @@ class CctvDownloadController extends Controller
      */
     private function getMinIOClient()
     {
-        $endpoint = config('filesystems.disks.minio.endpoint');
-        $accessKey = config('filesystems.disks.minio.key');
-        $secretKey = config('filesystems.disks.minio.secret');
-        $region = config('filesystems.disks.minio.region', 'us-east-1');
-        
+        $endpoint = config('storage.minio.endpoint');
+        $accessKey = config('storage.minio.access_key');
+        $secretKey = config('storage.minio.secret_key');
+        $region = config('storage.minio.region', 'us-east-1');
+
+        \Log::info('Creating MinIO client', [
+            'endpoint' => $endpoint,
+            'access_key' => $accessKey,
+            'region' => $region
+        ]);
         // Ensure endpoint has proper protocol
         if (!str_starts_with($endpoint, 'http://') && !str_starts_with($endpoint, 'https://')) {
             $endpoint = 'http://' . $endpoint;

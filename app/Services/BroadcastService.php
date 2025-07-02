@@ -17,33 +17,51 @@ class BroadcastService
      * 
      * @param SenderNumber $sender
      * @param BroadcastDataType $dataType
-     * @param int $resultId
+     * @param int|null $resultId
+     * @param bool $isFile
+     * @param string|null $url File URL when isFile is true
      * @return array
      */
-    public function sendBroadcast(SenderNumber $sender, BroadcastDataType $dataType, int $resultId): array
+    public function sendBroadcast(SenderNumber $sender, BroadcastDataType $dataType, ?int $resultId = null, bool $isFile = false, ?string $url = null): array
     {
-        // Get the detection result based on the data type
-        $result = $this->getDetectionResult($dataType, $resultId);
+        // If sending a file via URL, we don't need a result
+        if ($isFile && $url) {
+            // Get eligible recipients based on data type
+            $recipients = $this->getEligibleRecipients($dataType);
 
-        if (!$result) {
-            return [
-                'success' => false,
-                'message' => 'Detection result not found',
-            ];
+            if ($recipients->isEmpty()) {
+                return [
+                    'success' => false,
+                    'message' => 'No eligible recipients found',
+                ];
+            }
+
+            // Use the URL directly as message content for file sending
+            $messageContent = $url;
+        } else {
+            // Get the detection result based on the data type
+            $result = $this->getDetectionResult($dataType, $resultId);
+
+            if (!$result) {
+                return [
+                    'success' => false,
+                    'message' => 'Detection result not found',
+                ];
+            }
+
+            // Get eligible recipients based on data type
+            $recipients = $this->getEligibleRecipients($dataType);
+
+            if ($recipients->isEmpty()) {
+                return [
+                    'success' => false,
+                    'message' => 'No eligible recipients found',
+                ];
+            }
+
+            // Prepare message content based on data type
+            $messageContent = $this->prepareMessageContent($dataType, $result);
         }
-
-        // Get eligible recipients based on data type
-        $recipients = $this->getEligibleRecipients($dataType);
-
-        if ($recipients->isEmpty()) {
-            return [
-                'success' => false,
-                'message' => 'No eligible recipients found',
-            ];
-        }
-
-        // Prepare message content based on data type
-        $messageContent = $this->prepareMessageContent($dataType, $result);
 
         // Send message to each recipient
         $successCount = 0;
@@ -51,11 +69,16 @@ class BroadcastService
         $messageError = '';
 
         foreach ($recipients as $recipient) {
-            $response = $this->sendWhatsAppMessage($sender, $recipient->phone_no, $messageContent);
+            // Determine whether to send a file or a regular message
+            $response = $isFile 
+                ? $this->sendWhatsAppFile($sender, $recipient->phone_no, $messageContent)
+                : $this->sendWhatsAppMessage($sender, $recipient->phone_no, $messageContent);
 
             \Log::info('WhatsApp broadcast response', [
                 'recipient' => $recipient->name,
                 'phone' => $recipient->phone_no,
+                'isFile' => $isFile,
+                'fileUrl' => $isFile ? $messageContent : null,
                 'response' => $response,
             ]);
             if ($response['success']) {
@@ -66,6 +89,8 @@ class BroadcastService
                 Log::error('Failed to send WhatsApp broadcast', [
                     'recipient' => $recipient->name,
                     'phone' => $recipient->phone_no,
+                    'isFile' => $isFile,
+                    'fileUrl' => $isFile ? $messageContent : null,
                     'error' => $response['message'],
                 ]);
             }
@@ -236,6 +261,63 @@ class BroadcastService
             return [
                 'success' => false,
                 'message' => 'Error sending message: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Send a file via WhatsApp using the API
+     * 
+     * @param SenderNumber $sender
+     * @param string $recipientPhone
+     * @param string $fileUrl
+     * @return array
+     */
+    protected function sendWhatsAppFile(SenderNumber $sender, string $recipientPhone, string $fileUrl): array
+    {
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json'
+            ])->post('https://api.watzap.id/v1/send_file_url', [
+                'api_key' => $sender->api_key,
+                'number_key' => $sender->number_key,
+                'phone_no' => $recipientPhone,
+                'url' => $fileUrl,
+            ]);
+
+            \Log::notice('Watzap File API response', [
+                'recipient' => $recipientPhone,
+                'sender' => $sender->number_key,
+                'file_url' => $fileUrl,
+                'response_code' => $response->status(),
+                'if successful' => $response->successful(),
+                'response' => $response->body(),
+            ]);
+
+            $responseData = $response->json();
+
+            if (
+                $response->successful() &&
+                !(
+                    isset($responseData['status'], $responseData['message']) &&
+                    $responseData['status'] === '1002' &&
+                    $responseData['message'] === 'Invalid Secret Key'
+                )
+            ) {
+                return [
+                    'success' => true,
+                    'message' => 'File sent successfully',
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to send file: ' . $response->body(),
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Error sending file: ' . $e->getMessage(),
             ];
         }
     }

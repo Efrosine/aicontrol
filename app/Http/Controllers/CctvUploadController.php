@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BroadcastDataType;
+use App\Models\SenderNumber;
+use App\Services\BroadcastService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -69,6 +72,7 @@ class CctvUploadController extends Controller
             // Upload to MinIO
             $uploadResult = $this->uploadToMinIO($file, $storagePath);
             
+            
             if (!$uploadResult['success']) {
                 Log::error('Failed to upload file to MinIO', [
                     'storage_path' => $storagePath,
@@ -80,6 +84,39 @@ class CctvUploadController extends Controller
                     'message' => 'Failed to upload file to storage',
                     'error' => $uploadResult['error']
                 ], 500);
+            }
+
+            // Generate the file URL for the broadcast
+            $fileUrl = url('api/archive/fetch/' . $storagePath);
+
+            // Send broadcast notification with the file URL
+            try {
+                // Get the first available sender number
+                $sender = SenderNumber::first();
+                
+                if ($sender) {
+                    $broadcastService = new BroadcastService();
+                    $broadcastResult = $broadcastService->sendBroadcast(
+                        $sender,
+                        BroadcastDataType::CCTV,
+                        null,  // resultId is null since we're sending a file
+                        true,  // isFile set to true
+                        $fileUrl
+                    );
+                    
+                    Log::info('Broadcast notification sent', [
+                        'broadcast_result' => $broadcastResult,
+                        'file_url' => $fileUrl
+                    ]);
+                } else {
+                    Log::warning('No sender number found for broadcast notification');
+                }
+            } catch (\Exception $e) {
+                // Log but don't stop execution if broadcast fails
+                Log::error('Failed to send broadcast notification', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
 
             Log::info('CCTV file uploaded successfully', [
