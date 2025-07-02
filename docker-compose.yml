@@ -79,9 +79,25 @@ services:
                           capabilities: [gpu]
         networks:
             - sail
+    minio:
+        image: minio/minio:latest
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        networks:
+            - sail
+        volumes:
+            - minio_data:/data
+        environment:
+            MINIO_ROOT_USER: minioadmin
+            MINIO_ROOT_PASSWORD: minioadmin123
+        command: server /data --console-address ":9001"
+
 networks:
     sail:
         driver: bridge
 volumes:
     sail-mysql:
         driver: local
+    minio_data:
+
