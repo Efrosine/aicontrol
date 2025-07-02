@@ -13,7 +13,7 @@ return [
     */
 
     'minio' => [
-        'endpoint' => env('MINIO_ENDPOINT', 'minio:9000'),
+        'endpoint' => env('MINIO_ENDPOINT', '192.168.8.11:9000'),
         'access_key' => env('MINIO_ACCESS_KEY', 'minioadmin'),
         'secret_key' => env('MINIO_SECRET_KEY', 'minioadmin123'),
         'region' => env('MINIO_REGION', 'us-east-1'),
