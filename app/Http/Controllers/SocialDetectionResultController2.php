@@ -5,18 +5,17 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SocialDetectionResult;
 
-class SocialDetectionResultController extends Controller
+class SocialDetectionResultController2 extends Controller
 {
     public function index()
     {
         $results = SocialDetectionResult::orderByDesc('created_at')->get();
         return view('socailresult', compact('results'));
     }
-    public function analyze(Request $request)
-    {
-        $id = $request->input('id');
-        $text = $request->input('text');
 
+    public function analyze($id, $text)
+    {
+        dd($text);
         $response = \Http::withBody(json_encode(['text' => $text]), 'application/json')
             ->get('http://192.168.8.11:19999/webhook/analyze');
 

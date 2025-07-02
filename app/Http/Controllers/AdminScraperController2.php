@@ -61,9 +61,9 @@ class AdminScraperController2 extends Controller
         Log::info('Payload to ig-scraper: ' . $payloadJson);
 
         // Make HTTP POST to ig-scraper with raw JSON body
-       $response = Http::acceptJson()
-       ->timeout(0) // Set a timeout for the request
-    ->post('http://ig-scraper:5000/scrape', $payload);
+        $response = Http::acceptJson()
+            ->timeout(0) // Set a timeout for the request
+            ->post('http://ig-scraper:5000/scrape', $payload);
 
 
         // Log response for debugging
@@ -72,7 +72,7 @@ class AdminScraperController2 extends Controller
         // Check if response is successful
         if ($response->failed()) {
             Log::error('ig-scraper request failed: ' . $response->body());
-            
+
             // Log the failed scraping activity
             $platformName = $validated['platform'] === 'ig' ? 'Instagram' : ($validated['platform'] === 'x' ? 'X (Twitter)' : 'Twitter');
             ActivityService::logScrapingActivity(
@@ -80,30 +80,32 @@ class AdminScraperController2 extends Controller
                 platform: $platformName,
                 status: 'error'
             );
-            
+
             return back()->withErrors(['scraper' => 'Failed to fetch data from scraper.']);
         }
 
-$results = $response->json('results');
-      // Filter results to include only desired fields
-$filteredResults = array_map(function ($result) {
-    return [
-        'caption' => $result['caption'],
-        'comments' => array_values($result['comments']), // Convert comments object to array
-    ];
-}, $results);
+        $results = $response->json('results');
+        // Filter results to include only desired fields
 
-// Save input parameters
-$scrapedData = ScrapedData::create([
-    'input_query' => $payloadJson,
-]);
+        $filteredResults = array_map(function ($result) {
+            return [
+                'caption' => $result['caption'],
+                'comments' => array_values($result['comments']),
+                'urlPost' => $result['urlPost'],
+            ];
+        }, $results);
 
-// Save filtered results
-$scrapedResult = ScrapedResult::create([
-    'account' => $validated['suspected_account'],
-    'data' => json_encode($filteredResults),
-    'url' => $results[0]['url'] ?? '', // Assuming the first result has the URL
-]);
+        // Save input parameters
+        $scrapedData = ScrapedData::create([
+            'input_query' => $payloadJson,
+        ]);
+
+        // Save filtered results
+        $scrapedResult = ScrapedResult::create([
+            'account' => $validated['suspected_account'],
+            'data' => json_encode($filteredResults),
+            'url' => $results[0]['url'] ?? '', // Assuming the first result has the URL
+        ]);
 
         // Link the records
         ScrapedDataResult::create([
@@ -126,19 +128,19 @@ $scrapedResult = ScrapedResult::create([
     public function showResults($id)
     {
         $result = ScrapedResult::findOrFail($id);
-        Log::info('Showing results for text: ' . $result->data);
+        Log::info('Showing(admin) results for text: ' . $result->data);
         $decoded = json_decode($result->data, true);
         $text = '';
         foreach ($decoded as $item) {
             $text .= ($item['caption'] ?? '') . "\n";
             if (!empty($item['comments']) && is_array($item['comments'])) {
-            foreach ($item['comments'] as $comment) {
-                $text .= ($comment ?? '') . "\n";
-            }
+                foreach ($item['comments'] as $comment) {
+                    $text .= ($comment ?? '') . "\n";
+                }
             }
         }
         $text = trim($text);
-        return view('admin.scraper_results', ['result' => $result, 'text' => $text]);
+        return view('admin.scraper_results', ['result' => $result, 'data' => $text]);
     }
 
     public function index()
@@ -156,18 +158,22 @@ $scrapedResult = ScrapedResult::create([
     public function userShow($id)
     {
         $result = ScrapedResult::findOrFail($id);
-        Log::info('Showing results for text: ' . $result->data);
-          $decoded = json_decode($result->data, true);
+        \Log::info('Showing(user) results for text: ' . $result->data);
+        $decoded = json_decode($result->data, true);
         $text = '';
+        // dd($decoded);
         foreach ($decoded as $item) {
-            $text .= ($item['caption'] ?? '') . "\n";
+            // dd($item);
+            $text .= ($item['caption'] ?? 'b') . "\n";
             if (!empty($item['comments']) && is_array($item['comments'])) {
-            foreach ($item['comments'] as $comment) {
-                $text .= ($comment ?? '') . "\n";
-            }
+                foreach ($item['comments'] as $comment) {
+                    $text .= ($comment ?? 'e') . "\n";
+                }
             }
         }
+        // dd($text);
         $text = trim($text);
-        return view('scraper_results', compact('result', 'text'));
+        // dd($text);
+        return view('admin.scraper_results', ['result' => $result, 'data' => $text]);
     }
 }
