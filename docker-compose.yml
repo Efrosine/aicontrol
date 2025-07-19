@@ -6,7 +6,6 @@ services:
             args:
                 WWWGROUP: "${WWWGROUP}"
         image: sail-8.4/app
-        restart: unless-stopped
         extra_hosts:
             - "host.docker.internal:host-gateway"
         ports:
@@ -27,7 +26,6 @@ services:
 
     mysql:
         image: "mysql/mysql-server:8.0"
-        restart: unless-stopped
         ports:
             - "${FORWARD_DB_PORT:-3306}:3306"
         environment:
@@ -52,7 +50,6 @@ services:
             timeout: 5s
     phpmyadmin:
         image: phpmyadmin/phpmyadmin
-        restart: unless-stopped
         ports:
             - "${PHPMYADMIN_PORT:-8080}:80"
         environment:
@@ -65,16 +62,18 @@ services:
             - mysql
     ig-scraper:
         image: efrosine/ig-scraper:latest
-        restart: unless-stopped
         ports:
             - "${IG_SCRAPER_PORT:-5000}:5000"
         networks:
             - sail
     cctv-service:
         image: efrosine/cctv_service:0.2
-        restart: unless-stopped
         ports:
             - "${CCTV_SERVICE_PORT:-8000}:8000"
+        volumes:
+            - ./cctvdata/data/models:/app/data/models
+            - ./cctvdata/data/temp:/app/data/temp
+            - ./cctvdata/logs:/app/logs
         deploy:
             resources:
                 reservations:
@@ -86,7 +85,6 @@ services:
             - sail
     minio:
         image: minio/minio:latest
-        restart: unless-stopped
         ports:
             - "9000:9000"
             - "9001:9001"
