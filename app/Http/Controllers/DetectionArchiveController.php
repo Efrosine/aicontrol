@@ -41,6 +41,12 @@ class DetectionArchiveController extends Controller
             'all_params' => $request->all()
         ]);
         
+        // Build comprehensive camera list for dropdown
+        $cameras = $this->buildCameraDropdownList($knownCameras, $selectedDate, $showAllDates);
+        
+        // Get available detection types dynamically
+        $detectionTypes = $this->getAvailableDetectionTypes($selectedCamera, $selectedDate, $showAllDates);
+        
         // Get detection files from MinIO
         $detectionFiles = $this->getDetectionFilesFromMinIO(
             $selectedCamera, 
@@ -50,9 +56,6 @@ class DetectionArchiveController extends Controller
             $showAllDates
         );
         
-        // Build comprehensive camera list for dropdown
-        $cameras = $this->buildCameraDropdownList($knownCameras, $selectedDate, $showAllDates);
-        
         // Get storage status
         $storageController = new StorageSettingsController();
         $storageData = $storageController->getSettings();
@@ -60,7 +63,8 @@ class DetectionArchiveController extends Controller
         
         return view('admin.security.detection-archive', compact(
             'cameras', 
-            'detectionFiles', 
+            'detectionFiles',
+            'detectionTypes',
             'selectedCamera', 
             'selectedDate', 
             'selectedDetectionType',
@@ -836,4 +840,109 @@ class DetectionArchiveController extends Controller
         }
     }
 
+    /**
+     * Get available detection types from MinIO based on date and camera filter
+     */
+    private function getAvailableDetectionTypes($cameraFilter, $date, $showAllDates = false)
+    {
+        $detectionTypes = [];
+        
+        try {
+            // For a specific date
+            if (!$showAllDates) {
+                $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+                $year = $dateObj->format('Y');
+                $month = $dateObj->format('m');
+                $day = $dateObj->format('d');
+                
+                // For all cameras
+                if ($cameraFilter == 'all' || empty($cameraFilter)) {
+                    // Get all cameras for the date
+                    $cameraIds = $this->discoverAllCameraIds($year, $month, $day);
+                    
+                    // For each camera, get detection types
+                    foreach ($cameraIds as $cameraId) {
+                        $basePath = "{$cameraId}/{$year}/{$month}/{$day}/";
+                        $typesForCamera = $this->getDetectionTypesForPath($basePath);
+                        $detectionTypes = array_merge($detectionTypes, $typesForCamera);
+                    }
+                } else {
+                    // For a specific camera
+                    $basePath = "{$cameraFilter}/{$year}/{$month}/{$day}/";
+                    $detectionTypes = $this->getDetectionTypesForPath($basePath);
+                }
+            } else {
+                // For all dates
+                if ($cameraFilter == 'all' || empty($cameraFilter)) {
+                    // Get all cameras
+                    $cameraIds = $this->discoverAllCameraIdsGlobal();
+                    
+                    // For each camera, find detection types across all dates
+                    foreach ($cameraIds as $cameraId) {
+                        // Check years
+                        $basePath = "{$cameraId}/";
+                        $years = $this->getDetectionTypesForPath($basePath); // Getting years
+                        
+                        foreach ($years as $year) {
+                            // Check months
+                            $monthPath = "{$cameraId}/{$year}/";
+                            $months = $this->getDetectionTypesForPath($monthPath);
+                            
+                            foreach ($months as $month) {
+                                // Check days
+                                $dayPath = "{$cameraId}/{$year}/{$month}/";
+                                $days = $this->getDetectionTypesForPath($dayPath);
+                                
+                                foreach ($days as $day) {
+                                    // Get detection types
+                                    $typePath = "{$cameraId}/{$year}/{$month}/{$day}/";
+                                    $typesForDay = $this->getDetectionTypesForPath($typePath);
+                                    $detectionTypes = array_merge($detectionTypes, $typesForDay);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // For a specific camera across all dates
+                    $basePath = "{$cameraFilter}/";
+                    
+                    // Get years
+                    $years = $this->getDetectionTypesForPath($basePath);
+            
+                    foreach ($years as $year) {
+                        // Get months
+                        $monthPath = "{$cameraFilter}/{$year}/";
+                        $months = $this->getDetectionTypesForPath($monthPath);
+                        
+                        foreach ($months as $month) {
+                            // Get days
+                            $dayPath = "{$cameraFilter}/{$year}/{$month}/";
+                            $days = $this->getDetectionTypesForPath($dayPath);
+                            
+                            foreach ($days as $day) {
+                                // Get detection types
+                                $typePath = "{$cameraFilter}/{$year}/{$month}/{$day}/";
+                                $typesForDay = $this->getDetectionTypesForPath($typePath);
+                                $detectionTypes = array_merge($detectionTypes, $typesForDay);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Remove duplicates and sort
+            $detectionTypes = array_unique($detectionTypes);
+            sort($detectionTypes);
+            
+            Log::info('DetectionArchive: Available detection types', [
+                'types' => $detectionTypes
+            ]);
+            
+            return $detectionTypes;
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to get available detection types: ' . $e->getMessage());
+            return [];
+        }
+    }
 }

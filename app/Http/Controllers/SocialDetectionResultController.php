@@ -10,11 +10,13 @@ class SocialDetectionResultController extends Controller
     public function index()
     {
         $results = SocialDetectionResult::orderByDesc('created_at')->get();
-        return view('social_detection_results.index', compact('results'));
+        return view('socailresult', compact('results'));
     }
-
-    public function analyze($id, $text)
+    public function analyze(Request $request)
     {
+        $id = $request->input('id');
+        $text = $request->input('text');
+
         $response = \Http::withBody(json_encode(['text' => $text]), 'application/json')
             ->get('http://192.168.8.11:19999/webhook/analyze');
 

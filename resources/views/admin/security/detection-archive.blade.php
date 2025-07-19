@@ -100,11 +100,14 @@
                 </label>
                 <select name="detection_type" class="select select-bordered w-full" onchange="this.form.submit()">
                     <option value="all" {{ $selectedDetectionType == 'all' || !$selectedDetectionType ? 'selected' : '' }}>All Types</option>
-                    <option value="person" {{ $selectedDetectionType == 'person' ? 'selected' : '' }}>Person</option>
-                    <option value="vehicle" {{ $selectedDetectionType == 'vehicle' ? 'selected' : '' }}>Vehicle</option>
-                    <option value="motion" {{ $selectedDetectionType == 'motion' ? 'selected' : '' }}>Motion</option>
-                    <option value="face" {{ $selectedDetectionType == 'face' ? 'selected' : '' }}>Face</option>
-                    <option value="package" {{ $selectedDetectionType == 'package' ? 'selected' : '' }}>Package</option>
+                    @foreach($detectionTypes as $type)
+                        <option value="{{ $type }}" {{ $selectedDetectionType == $type ? 'selected' : '' }}>
+                            {{ ucfirst($type) }}
+                        </option>
+                    @endforeach
+                    @if(empty($detectionTypes))
+                        <option value="person" {{ $selectedDetectionType == 'person' ? 'selected' : '' }} disabled>No detection types found</option>
+                    @endif
                 </select>
             </div>
 

@@ -8,8 +8,13 @@
                 <pre
                     class="mockup-code overflow-x-auto"><code>{{ json_encode(json_decode($result->data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</code></pre>
                 <div class="card-actions justify-end mt-4">
-                    <a href="{{ route('admin.scraper.analyze', ['id' => $result->id, 'text' => $text]) }}" class="btn btn-primary">Analyz3</a>
-                     
+                    <form action="{{ route('admin.scraper.analyze') }}" method="POST" class="inline">
+                        @csrf
+                        <input type="hidden" name="id" value="{{ $result->id }}">
+                        <input type="hidden" name="text" value="{{ json_encode($result->data) }}">
+                        <button type="submit" class="btn btn-primary">Analyze</button>
+                    </form>
+
                     <a href="{{ route('scraper.results.list') }}" class="btn btn-secondary">Back to Results</a>
                 </div>
             </div>
