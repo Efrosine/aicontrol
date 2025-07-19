@@ -56,7 +56,7 @@
                             <div class="aspect-video bg-gray-900 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                                 @if(isset($camera['status']) && $camera['status'] === 'active')
                                     <iframe 
-                                        src="{{ config('cctv.service.base_url') }}/stream/{{ $camera['id'] }}" 
+                                        src="{{ route('cctvs.stream.proxy', $camera['id']) }}" 
                                         class="w-full h-full border-0"
                                         title="Live Camera Stream - {{ $camera['name'] }}"
                                         loading="lazy">
@@ -76,7 +76,7 @@
                                     {{ $camera['ip_address'] ?? 'N/A' }}
                                 </div>
                                 @if(isset($camera['status']) && $camera['status'] === 'active')
-                                    <a href="{{ config('cctv.service.base_url') }}/stream/{{ $camera['id'] }}" 
+                                    <a href="{{ route('cctvs.stream.proxy', $camera['id']) }}" 
                                        target="_blank" 
                                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition duration-200 flex items-center">
                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -187,6 +187,14 @@ class CctvService
     }
 
     /**
+     * Get public stream URL for a camera (proxied through Laravel app)
+     */
+    public function getPublicStreamUrl($cameraId)
+    {
+        return route('cctvs.stream.proxy', $cameraId);
+    }
+
+    /**
      * Get detection configuration
      */
     public function getDetectionConfig()

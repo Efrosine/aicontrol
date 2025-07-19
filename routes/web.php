@@ -16,6 +16,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Public CCTV stream proxy route (no auth required for iframe embedding)
+Route::get('cctvs/{id}/stream-proxy', [CctvController::class, 'streamProxy'])->name('cctvs.stream.proxy');
+
 // Authentication routes
 Route::middleware(['guest'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

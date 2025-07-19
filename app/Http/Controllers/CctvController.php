@@ -123,8 +123,8 @@ class CctvController extends Controller
         // Get detection configuration
         $detectionConfig = $this->cctvService->getDetectionConfig();
         
-        // Get stream URL
-        $streamUrl = $this->cctvService->getStreamUrl($id);
+        // Get public stream URL (proxied through Laravel app)
+        $streamUrl = $this->cctvService->getPublicStreamUrl($id);
 
         return view('cctvs.show', compact('camera', 'detectionConfig', 'streamUrl'));
     }
@@ -273,9 +273,122 @@ class CctvController extends Controller
     public function stream($id)
     {
         $streamUrl = $this->cctvService->getStreamUrl($id);
-        
+
+        if (!$streamUrl) {
+            abort(404, 'Camera stream not available');
+        }
+
         // Redirect to the external stream URL
         return redirect($streamUrl);
+    }
+
+    /**
+     * Proxy MJPEG stream from local CCTV service to make it publicly accessible
+     */
+    public function streamProxy($id)
+    {
+        // Verify camera exists
+        $camera = $this->cctvService->getCamera($id);
+        if ($camera === null) {
+            abort(404, 'Camera not found');
+        }
+
+        // Check if camera is active
+        if (!isset($camera['status']) || $camera['status'] !== 'active') {
+            abort(503, 'Camera is offline or inactive');
+        }
+
+        // Get the local stream URL
+        $localStreamUrl = $this->cctvService->getStreamUrl($id);
+        
+        try {
+            \Log::info('Starting MJPEG stream proxy', [
+                'camera_id' => $id,
+                'camera_name' => $camera['name'] ?? 'Unknown',
+                'local_stream_url' => $localStreamUrl
+            ]);
+
+            // Create a streaming response that proxies the MJPEG stream
+            return response()->stream(function() use ($localStreamUrl, $id) {
+                // Set up stream context with appropriate settings for MJPEG
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 300, // 5 minutes timeout for streaming
+                        'method' => 'GET',
+                        'header' => [
+                            'User-Agent: Laravel-CCTV-Proxy/1.0',
+                            'Accept: multipart/x-mixed-replace,*/*',
+                            'Connection: keep-alive'
+                        ],
+                        'ignore_errors' => false
+                    ]
+                ]);
+
+                // Open the stream from the local CCTV service
+                $stream = @fopen($localStreamUrl, 'r', false, $context);
+                
+                if (!$stream) {
+                    \Log::error('Failed to open MJPEG stream', [
+                        'camera_id' => $id,
+                        'stream_url' => $localStreamUrl,
+                        'error' => error_get_last()
+                    ]);
+                    
+                    // Send a simple error message in MJPEG format
+                    echo "--frame\r\n";
+                    echo "Content-Type: text/plain\r\n\r\n";
+                    echo "Camera stream unavailable\r\n";
+                    echo "--frame--\r\n";
+                    return;
+                }
+
+                // Stream the data in chunks
+                while (!feof($stream)) {
+                    $chunk = fread($stream, 8192); // Read 8KB chunks
+                    if ($chunk !== false && strlen($chunk) > 0) {
+                        echo $chunk;
+                        
+                        // Flush output buffers
+                        if (ob_get_level()) {
+                            ob_flush();
+                        }
+                        flush();
+                    }
+                    
+                    // Check if client disconnected
+                    if (connection_aborted()) {
+                        \Log::info('MJPEG stream client disconnected', ['camera_id' => $id]);
+                        break;
+                    }
+                    
+                    // Small delay to prevent excessive CPU usage
+                    usleep(1000); // 1ms delay
+                }
+                
+                fclose($stream);
+                \Log::info('MJPEG stream ended', ['camera_id' => $id]);
+                
+            }, 200, [
+                'Content-Type' => 'multipart/x-mixed-replace; boundary=frame',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+                'Connection' => 'keep-alive',
+                'Access-Control-Allow-Origin' => '*',
+                'Access-Control-Allow-Methods' => 'GET',
+                'Access-Control-Allow-Headers' => 'Content-Type'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('CCTV Stream Proxy Error', [
+                'camera_id' => $id,
+                'stream_url' => $localStreamUrl,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            abort(503, 'Camera stream temporarily unavailable');
+        }
     }
 
     /**
@@ -291,7 +404,7 @@ class CctvController extends Controller
 
         return response()->json([
             'camera' => $camera,
-            'stream_url' => $this->cctvService->getStreamUrl($id),
+            'stream_url' => $this->cctvService->getPublicStreamUrl($id),
             'detection_config' => $this->cctvService->getDetectionConfig(),
         ]);
     }
