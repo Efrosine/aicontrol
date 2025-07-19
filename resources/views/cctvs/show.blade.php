@@ -126,20 +126,19 @@
                     Live Stream
                 </h2>
 
-                <div class="aspect-video bg-gray-900 rounded-lg overflow-hidden mb-4 flex items-center justify-center">
-                    @if(isset($streamUrl))
-                        <iframe src="{{ $streamUrl }}" class="w-full h-full border-0" title="Live Camera Stream" width="100%"
-                            height="100%" scrolling="no" style="display:block; object-fit: contain;" allowfullscreen>
-                        </iframe>
+                <div class="w-full aspect-video bg-gray-900 rounded-lg overflow-hidden relative">
+                    @if(isset($camera['status']) && $camera['status'] === 'active')
+                        <img src="{{ route('cctvs.stream.proxy', $camera['id']) }}"
+                            class="absolute inset-0 w-full h-full object-cover" alt="Live Camera Stream - {{ $camera['name'] }}"
+                            loading="lazy" />
                     @else
-                        <div class="text-center text-gray-400">
-                            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex flex-col items-center justify-center w-full h-full text-gray-400">
+                            <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
                                 </path>
                             </svg>
-                            <p class="text-lg font-medium">Stream Not Available</p>
-                            <p class="text-sm">The camera stream is currently unavailable</p>
+                            <p class="text-sm">Camera Offline</p>
                         </div>
                     @endif
                 </div>
@@ -278,8 +277,7 @@
         }
 
         function refreshStream() {
-            // Refresh the iframe if it exists
-            const iframe = document.querySelector('iframe');
+            const iframe = document.querySelector('iframe[src*="stream-proxy"]');
             if (iframe) {
                 const src = iframe.src;
                 iframe.src = '';
@@ -287,36 +285,108 @@
                     iframe.src = src;
                 }, 100);
             } else {
-                // Reload the page if no iframe
                 window.location.reload();
             }
         }
 
-        // Ensure iframe content scales properly
-        function resizeIframeToFit() {
-            const iframe = document.querySelector('iframe');
+        // Enhanced iframe scaling for MJPEG streams - Vite compatible
+        function optimizeStreamDisplay() {
+            const iframe = document.querySelector('iframe[src*="stream-proxy"]');
             if (iframe) {
-                const container = iframe.parentElement;
-                const containerWidth = container.clientWidth;
-                const containerHeight = container.clientHeight;
+                // Apply styles via JavaScript to avoid Vite/Tailwind conflicts
+                iframe.style.cssText = `
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        border: none;
+                        background-color: #111827;
+                        object-fit: contain;
+                        object-position: center;
+                    `;
 
-                // Set iframe dimensions to match container's aspect ratio
-                iframe.style.maxWidth = '100%';
-                iframe.style.maxHeight = '100%';
-                iframe.style.width = containerWidth + 'px';
-                iframe.style.height = containerHeight + 'px';
+                // Handle iframe load events
+                iframe.addEventListener('load', function () {
+                    console.log('MJPEG stream loaded successfully');
+
+                    // Try to optimize the content inside iframe (if same-origin)
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (iframeDoc && iframeDoc.body) {
+                            // Apply responsive styles to iframe content
+                            iframeDoc.body.style.cssText = `
+                                    margin: 0;
+                                    padding: 0;
+                                    background: #111827;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    min-height: 100vh;
+                                    overflow: hidden;
+                                `;
+
+                            // Style any images in the iframe
+                            const images = iframeDoc.querySelectorAll('img');
+                            images.forEach(img => {
+                                img.style.cssText = `
+                                        max-width: 100%;
+                                        max-height: 100vh;
+                                        width: auto;
+                                        height: auto;
+                                        object-fit: contain;
+                                        object-position: center;
+                                        image-rendering: crisp-edges;
+                                    `;
+                            });
+                        }
+                    } catch (e) {
+                        // Cross-origin restrictions - this is expected and fine
+                        console.log('Stream content optimization skipped (cross-origin)');
+                    }
+                });
+
+                iframe.addEventListener('error', function () {
+                    console.error('MJPEG stream failed to load');
+                    this.style.backgroundColor = '#1f2937';
+                });
             }
         }
 
-        // Run on page load and whenever window is resized
-        window.addEventListener('load', resizeIframeToFit);
-        window.addEventListener('resize', resizeIframeToFit);
+        // Initialize stream on page load
+        function initializeStream() {
+            optimizeStreamDisplay();
+        }
 
-        // Close modal when clicking outside
-        document.getElementById('delete-modal').addEventListener('click', function (e) {
+        // Event listeners - compatible with Vite HMR
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeStream();
+        });
+
+        window.addEventListener('load', function () {
+            initializeStream();
+        });
+
+        window.addEventListener('resize', function () {
+            optimizeStreamDisplay();
+        });
+
+        // Modal event listener
+        document.getElementById('delete-modal')?.addEventListener('click', function (e) {
             if (e.target === this) {
                 closeDeleteModal();
             }
         });
+
+        // Stream health monitoring (reduced frequency for better performance)
+        let streamHealthCheck = setInterval(function () {
+            const iframe = document.querySelector('iframe[src*="stream-proxy"]');
+            if (iframe) {
+                // Simple health check - just ensure iframe is still in DOM
+                if (!document.contains(iframe)) {
+                    clearInterval(streamHealthCheck);
+                }
+            }
+        }, 60000); // Check every minute
     </script>
 @endsection

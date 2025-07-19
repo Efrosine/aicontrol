@@ -53,14 +53,21 @@
                                 {{ $camera['location'] ?? 'Unknown location' }}
                             </p>
 
-                            <div class="aspect-video bg-gray-900 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                            <div class="aspect-video bg-gray-900 rounded-lg mb-4 overflow-hidden relative">
                                 @if(isset($camera['status']) && $camera['status'] === 'active')
-                                    <iframe 
+                                    <img
+                                        src="{{ route('cctvs.stream.proxy', $camera['id']) }}"
+                                        class="absolute inset-0 w-full h-full object-cover"
+                                        alt="Live Camera Stream - {{ $camera['name'] }}"
+                                        loading="lazy"
+                                    />    
+                                <!-- <iframe 
                                         src="{{ route('cctvs.stream.proxy', $camera['id']) }}" 
-                                        class="w-full h-full border-0"
+                                        class="absolute inset-0 w-full h-full border-0 bg-gray-900"
                                         title="Live Camera Stream - {{ $camera['name'] }}"
+                                        scrolling="no"
                                         loading="lazy">
-                                    </iframe>
+                                    </iframe> -->
                                 @else
                                     <div class="text-center text-gray-400">
                                         <svg class="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,16 +142,44 @@
 
 @section('scripts')
 <script>
-// Auto-refresh page every 5 minutes to keep streams updated
-setTimeout(function() {
-    window.location.reload();
-}, 300000); // 5 minutes
-
-// Handle iframe loading errors
-document.addEventListener('DOMContentLoaded', function() {
-    const iframes = document.querySelectorAll('iframe');
+// Enhanced iframe content scaling for MJPEG streams
+function resizeIframesToFit() {
+    const iframes = document.querySelectorAll('iframe[src*="stream-proxy"]');
     iframes.forEach(function(iframe) {
+        const container = iframe.parentElement;
+        
+        // Set iframe styles using cssText for Vite compatibility
+        iframe.style.cssText = `
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            background-color: #111827 !important;
+            image-rendering: -webkit-optimize-contrast !important;
+            image-rendering: crisp-edges !important;
+            image-rendering: pixelated !important;
+        `;
+    });
+}
+
+// Enhanced stream initialization
+function initializeStreams() {
+    const iframes = document.querySelectorAll('iframe[src*="stream-proxy"]');
+    iframes.forEach(function(iframe) {
+        // Add loading state with JavaScript styling
+        iframe.style.background = '#111827';
+        
+        // Handle load events
+        iframe.addEventListener('load', function() {
+            console.log('MJPEG stream loaded successfully');
+            resizeIframesToFit();
+        });
+        
         iframe.addEventListener('error', function() {
+            console.error('MJPEG stream failed to load');
             const parent = this.parentElement;
             parent.innerHTML = `
                 <div class="text-center text-gray-400">
@@ -156,6 +191,24 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         });
     });
+}
+
+// Auto-refresh page every 5 minutes to keep streams updated
+setTimeout(function() {
+    window.location.reload();
+}, 300000); // 5 minutes
+
+// Initialize on page load and resize
+window.addEventListener('load', function() {
+    initializeStreams();
+    resizeIframesToFit();
+});
+
+window.addEventListener('resize', resizeIframesToFit);
+
+// Handle iframe loading errors - Enhanced version
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStreams();
 });
 </script>
 @endsection
